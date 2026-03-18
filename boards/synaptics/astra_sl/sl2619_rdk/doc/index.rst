@@ -130,7 +130,7 @@ Initialize the workspace folder (``syna_zephyr``):
 
    cd ~/syna_zephyr/zephyr
    west update
-   west sdk install --version 0.17.4 --toolchains arm-zephyr-eabi aarch64-zephyr-elf
+   west sdk install --version 1.0.0 --toolchains arm-zephyr-eabi aarch64-zephyr-elf
    pip install -r ~/syna_zephyr/zephyr/scripts/requirements.txt
 
 **Additional requirement (GICv2 support)**
