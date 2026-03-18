@@ -57,27 +57,131 @@ Programming and Debugging
 
 .. zephyr:board-supported-runners::
 
-Initialization
-==============
+The Synaptics SR110 SoC needs to be eMMC flashed prior to running a Zephyr application. This can be
+achieved by following Synaptics Astra Machina Eval platform instructions.
 
-The first step is to initialize the workspace folder (``my-workspace``) where
-the example application and all Zephyr modules will be cloned.
-Make sure your ssh keys for accessing the Synaptics repositories are added to
-github and authenticated. Run the following command:
+Setup
+=====
+
+
+WSL
+---
+
+Open Windows PowerShell and run:
 
 .. code-block:: console
 
-   west init -m git@github.com:syna-eepd/zephyr_srsdk --mr main my-workspace
+   wsl --install
+   wsl.exe --install Ubuntu-24.04
 
-   # update Zephyr modules
-   cd my-workspace
+Now switch to the WSL terminal and run:
+
+.. code-block:: console
+
+   cd ~
+   sudo apt update && sudo apt upgrade -y
+   sudo apt install python3-pip python3-venv
+   python3 -m venv ~/.venvs/syna_zephyr
+   source ~/.venvs/syna_zephyr/bin/activate
+   pip install pycryptodome pexpect 
+   pip install --upgrade pip
+   pip install west
+   sudo apt install zip unzip usbutils openocd
+
+Install GNU Arm Embedded toolchain.
+----------------------------------
+.. code-block:: console
+
+   wget https://developer.arm.com/-/media/Files/downloads/gnu/15.2.rel1/binrel/arm-gnu-toolchain-15.2.rel1-x86_64-arm-none-eabi.tar.xz
+   tar xJf arm-gnu-toolchain-15.2.rel1-x86_64-arm-none-eabi.tar.xz -C $HOME
+   export GNUARMEMB_TOOLCHAIN_PATH="$HOME/arm-gnu-toolchain-15.2.rel1-x86_64-arm-none-eabi"
+   export ZEPHYR_TOOLCHAIN_VARIANT=gnuarmemb
+   export PATH="$PATH:$HOME/arm-gnu-toolchain-15.2.rel1-x86_64-arm-none-eabi/bin"
+
+Make sure the toolchain is available in your environment (e.g., added to PATH).
+
+ SDK Tools Setup
+---------------
+
+Install the required SDK tools by following the
+`Zephyr Getting Started Guide <https://docs.zephyrproject.org/latest/develop/getting_started/index.html>`_.
+
+Linux
+-----
+
+On a Linux host terminal, run:
+
+.. code-block:: console
+
+   cd ~
+   sudo apt update && sudo apt upgrade -y
+   sudo apt install python3-pip python3-venv
+   python3 -m venv ~/.venvs/syna_zephyr
+   source ~/.venvs/syna_zephyr/bin/activate
+   pip install pycryptodome pexpect
+   pip install --upgrade pip
+   pip install west
+   sudo apt install zip unzip usbutils openocd
+
+Install GNU Arm Embedded toolchain.
+----------------------------------
+.. code-block:: console
+
+   wget https://developer.arm.com/-/media/Files/downloads/gnu/15.2.rel1/binrel/arm-gnu-toolchain-15.2.rel1-x86_64-arm-none-eabi.tar.xz
+   tar xJf arm-gnu-toolchain-15.2.rel1-x86_64-arm-none-eabi.tar.xz -C $HOME
+   export GNUARMEMB_TOOLCHAIN_PATH="$HOME/arm-gnu-toolchain-15.2.rel1-x86_64-arm-none-eabi"
+   export ZEPHYR_TOOLCHAIN_VARIANT=gnuarmemb
+   export PATH="$PATH:$HOME/arm-gnu-toolchain-15.2.rel1-x86_64-arm-none-eabi/bin"
+
+Make sure the toolchain is available in your environment (e.g., added to PATH).
+
+SDK Tools Setup
+---------------
+
+Install the required SDK tools by following the
+`Zephyr Getting Started Guide <https://docs.zephyrproject.org/latest/develop/getting_started/index.html>`_.
+follow the steps from section "Select and Update OS" till step 3 of "Get Zephyr and install Python dependencies" section.
+
+
+> sudo apt install ninja-build
+> sudo apt install binutils-arm-none-eabi
+> pip install cmake
+
+Initialization
+==============
+
+Next, obtain ``zephyr_srsdk`` either by ``west init`` or from a ``.zip`` file.
+
+Option 1: west init
+
+The first step is to initialize the workspace folder (``syna_zephyr``) where
+the example application and all Zephyr modules will be cloned. Run the following
+command:
+
+.. code-block:: console
+
+   west init -m https://github.com/synaptics-astra-mcu/syna_zephyr_sdk.git --mr main  syna_zephyr
+
+Option 2: .zip file
+
+Copy the ``zephyr_srsdk-main.zip`` file into ``~/syna_zephyr`` and run:
+
+.. code-block:: console
+
+   cd ~/syna_zephyr
+   unzip zephyr_srsdk-main.zip
+   mv zephyr_srsdk-main zephyr_srsdk
+   west init -l .
+
+ # update Zephyr modules
+   cd syna_zephyr/zephyr
    west update
 
 For the image generation scripts, clone the following repository:
 
 .. code-block:: console
 
-   git@github.com:synaptics-astra-mcu/srsdk_tools
+   git clone https://github.com/synaptics-astra-mcu/srsdk_tools.git
 
 These tools require the python package ``pycrypto`` and the executable
 ``arm-none-eabi-objcopy`` from the ARM GNU toolchain in your PATH.
@@ -107,18 +211,37 @@ You can also try the shell and blinky examples:
    west build -b sr100_rdk ../zephyr/samples/basic/blinky
    west build -b sr100_rdk ../zephyr/samples/subsys/shell/shell_module
 
+For a clean rebuild:
+
+.. code-block:: bash
+
+   west build -p always -b sr100_rdk ../zephyr/samples/subsys/shell/shell_module
+
 Flashing
 ========
 
 For installation on the target, the Astra image generator scripts need to be
 invoked to create a combined image (SPK, APBL/bootloader & M55-firmware).
 
-The default path to the image generator is ``my-workspace/srsdk_tools`` but can
+The default path to the image generator is ``syna_zephyr/srsdk_tools`` but can
 be modified with the parameter ``-DSRSDK_IMGGEN=path`` when calling ``west build``.
 The resulting image file is stored in ``build/zephyr/zephyr_flash.bin``.
 
 Connect the board using the USB-C connector to your host machine. Make sure you can see the
 CMSIS-DAP endpoint using ``lsusb``:
+
+Debugging on WSL
+----------------
+
+To use ``west debugserver``, the CMSIS-DAP device must be attached to WSL.
+
+Use ``usbipd`` from Windows Powersehll with admin permission to list and attach the device:
+
+.. code-block:: bash
+   winget install --id=dorssel.usbipd-win -e # Install usbipd if not already installed
+   usbipd list
+   usbipd bind --busid <bus_id> --force # Bind the device to WSL 
+   usbipd attach --wsl --busid <bus_id> # Attach the device to WSL
 
 .. code-block:: console
 
@@ -132,11 +255,17 @@ Next, run the ``west debugserver`` command.
    :board: sr100_rdk
    :goals: debugserver
 
+.. code-block:: console
+
+   cd syna_zephyr/zephyr_srsdk
+   west debugserver
+
 Now, in a separate terminal, run the flashing script provided by Synaptics:
 
 .. code-block:: console
 
-   python openocd_flash.py build/zephyr/zephyr_flash.bin 0x0 0x0 1
+   cd syna_zephyr/srsdk_tools
+   python openocd_flash.py ../zephyr_srsdk/build/zephyr/zephyr_flash.bin 0x0 0x0 1
 
 References
 **********

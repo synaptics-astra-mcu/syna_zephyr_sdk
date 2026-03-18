@@ -8,66 +8,148 @@ at the `Synaptics website`_.
 
 * The Astra Machina SL261X Evaluation Platform Kit features the following
   key components:
-    * Single and dual core Arm Cortex-A55 SoC domain
-    * Arm Cortex-M52 with Helium System Manager domain
-    * 1 TOPS Transformer-capable NPU
-    * 3D GPU with Arm Mali-G31
-    * MIPI-DSI & CSI with 2160p30 and HDR
-    * 3x TDM/I2S with 16 channels, support for 8 digital mics
-    * Hardware audio and camera mute
-    * 2 USB-2.0, 2 SDIO 3.0, 4 TWSI I2C, 8 UART
-    * 5 SPI, 2 xSPI, 99 GPIO
-    * 12-bit ADC and up to 12 smart PWM modules in SM domain
-    * DDR4/LPDDR4/DDR3L with inline ECC
-    * PSA certified Level 3 (RoT), Level 2 (Product)
-    * Secure boot, TRNG, RSA, AWS, SHA, ECC, HASH
-    * Single and Dual GbE RGMII with Wake-on-LAN
-    * 1588 PTP and TSN, 802.1 p/q VLAN tagging
+
+  * Single and dual core Arm Cortex-A55 SoC domain
+  * Arm Cortex-M52 with Helium System Manager domain
+  * 1 TOPS Transformer-capable NPU
+  * 3D GPU with Arm Mali-G31
+  * MIPI-DSI & CSI with 2160p30 and HDR
+  * 3x TDM/I2S with 16 channels, support for 8 digital mics
+  * Hardware audio and camera mute
+  * 2 USB-2.0, 2 SDIO 3.0, 4 TWSI I2C, 8 UART
+  * 5 SPI, 2 xSPI, 99 GPIO
+  * 12-bit ADC and up to 12 smart PWM modules in SM domain
+  * DDR4/LPDDR4/DDR3L with inline ECC
+  * PSA certified Level 3 (RoT), Level 2 (Product)
+  * Secure boot, TRNG, RSA, AWS, SHA, ECC, HASH
+  * Single and Dual GbE RGMII with Wake-on-LAN
+  * 1588 PTP and TSN, 802.1 p/q VLAN tagging
 
 .. image:: img/sl261x_rdk_board.png
-     :align: center
-     :alt: SL261X Astra Machina Eval Platform
+   :align: center
+   :alt: SL261X Astra Machina Eval Platform
+
 
 Supported Features
 ==================
 
 .. zephyr:board-supported-hw::
 
+
 Connections and IOs
 ===================
 
-A detailed description on the hardware connections, IOs and peripherals can be found on the
-`Synaptics Astra Machina Eval platform website`_
+A detailed description of the hardware connections, IOs and peripherals can be found on the
+`Synaptics Astra Machina Eval platform website`_.
+
 
 Programming and Debugging
 *************************
 
 .. zephyr:board-supported-runners::
 
-The Synaptics SL261X SoC needs to be eMMC flashed prior to running a Zephyr application. This can be
-achieved by following Synaptics Astra Machina Eval platform instructions.
+The Synaptics SL261X SoC needs to be eMMC flashed prior to running a Zephyr application.
+This can be achieved by following Synaptics Astra Machina Eval platform instructions.
+
+
+Setup
+=====
+
+WSL
+---
+
+Open Windows PowerShell and run:
+
+.. code-block:: console
+
+   wsl --install
+   wsl.exe --install Ubuntu-24.04
+
+Now switch to the WSL terminal and run:
+
+.. code-block:: console
+
+   cd ~
+   sudo apt update && sudo apt upgrade -y
+   sudo apt install python3-pip python3-venv
+   python3 -m venv ~/.venvs/syna_zephyr
+   source ~/.venvs/syna_zephyr/bin/activate
+   pip install --upgrade pip
+   pip install west
+   sudo apt install unzip
+   sudo apt install ninja-build
+   sudo apt install binutils-arm-none-eabi
+   pip install cmake
+
+
+Linux
+-----
+
+On a Linux host terminal, run:
+
+.. code-block:: console
+
+   cd ~
+   sudo apt update && sudo apt upgrade -y
+   sudo apt install python3-pip python3-venv
+   python3 -m venv ~/.venvs/syna_zephyr
+   source ~/.venvs/syna_zephyr/bin/activate
+   pip install --upgrade pip
+   pip install west
+   sudo apt install unzip
+   sudo apt install ninja-build
+   sudo apt install binutils-arm-none-eabi
+   pip install cmake
 
 Initialization
 ==============
 
-Install the Zephyr SDK (version 0.17.4) by following the
-`Zephyr Getting Started Guide <https://docs.zephyrproject.org/latest/develop/getting_started/index.html>`_.
+Next, obtain ``zephyr_srsdk`` either by ``west init`` or from a ``.zip`` file.
 
-The first step is to initialize the workspace folder (``my-workspace``) where
-the example application and all Zephyr modules will be cloned. Run the following
-command:
+**Option 1: west init**
+
+Initialize the workspace folder (``syna_zephyr``):
 
 .. code-block:: console
 
-   west init -m https://github.com/syna-eepd/zephyr_srsdk --mr main my-workspace
+   west init -m https://github.com/synaptics-astra-mcu/syna_zephyr_sdk --mr main syna_zephyr
 
-   # update Zephyr modules
-   cd my-workspace
+
+**Option 2: .zip file**
+
+.. code-block:: console
+
+   cd ~/syna_zephyr
+   unzip zephyr_srsdk-main.zip
+   mv zephyr_srsdk-main zephyr_srsdk
+   west init -l .
+
+**Common setup (required for both options)**
+
+.. code-block:: console
+
+   cd ~/syna_zephyr/zephyr
    west update
+   west sdk install --version 0.17.4 --toolchains arm-zephyr-eabi aarch64-zephyr-elf
+   pip install -r ~/syna_zephyr/zephyr/scripts/requirements.txt
 
-For GICV2, please merge the following upstream PR in the zephyr repository:
+**Additional requirement (GICv2 support)**
 
+.. note::
+
+   This patch is required for proper GICv2 interrupt controller support.
+
+Upstream PR:
 ``https://github.com/zephyrproject-rtos/zephyr/pull/105253``
+
+.. code-block:: console
+
+   cd ~/syna_zephyr/zephyr
+   git config user.name "<USER>"
+   git config user.email "<EMAIL ID>"
+   git fetch origin pull/105253/head:pr-105253
+   git cherry-pick 58ed79495d1
+
 
 Building
 ========
@@ -76,23 +158,19 @@ Before building, set the toolchain environment for each target.
 
 **A55 DDRLESS image**
 
-Set the Zephyr SDK toolchain and build the A55 image:
-
 .. code-block:: console
 
-   cd my-workspace/zephyr
+   cd syna_zephyr/zephyr
 
    export ZEPHYR_TOOLCHAIN_VARIANT=zephyr
-   export ZEPHYR_SDK_INSTALL_DIR=<path/to/zephyr-sdk-0.17.4>
+   export ZEPHYR_SDK_INSTALL_DIR=<path/to/zephyr-sdk-1.0.0>
 
    west build -b sl2619_rdk/sl2619/a55/ddrless \
        samples/subsys/shell/shell_module \
        -p auto -d build/a55_image
 
-**M52 bootloader image (with A55 image bundled)**
 
-Switch to the GNU Arm Embedded toolchain and build the M52 image, passing
-the previously built A55 output directory via ``SL261X_A55_OUT``:
+**M52 bootloader image (with A55 image bundled)**
 
 .. code-block:: console
 
@@ -101,55 +179,51 @@ the previously built A55 output directory via ``SL261X_A55_OUT``:
 
    west build -b sl2619_rdk/sl2619/m52 \
        ../zephyr_srsdk/samples/boot_a55 \
-       -p auto -DSL261X_A55_OUT="../../build/a55_image" -d build/<final_build_dir>
+       -p auto \
+       -DSL261X_A55_OUT="../../build/a55_image" \
+       -d build/<final_build_dir>
+
 
 Serial Console Setup
 --------------------
 
-Before proceeding, connect a USB-TTL adaptor to the 40-pin GPIO connector
-(RX, TX, GND) and open a serial terminal on the host:
+Connect a USB-TTL adaptor to the 40-pin GPIO connector (RX, TX, GND)
+and open a serial terminal:
 
 .. code-block:: console
 
-   $ minicom -D <tty_device> -b 115200
+   minicom -D <tty_device> -b 115200
 
-Replace ``<tty_device>`` with the appropriate serial device, for example
-``/dev/ttyUSB0`` on Linux.
+Example:
+
+``/dev/ttyUSB0``
+
 
 Flashing Zephyr on SL2619
 ==========================
 
-To boot Zephyr using U-Boot from the A55, an eMMC Linux image
-must first be programmed onto the board.
+To boot Zephyr using U-Boot from the A55, an eMMC Linux image must first be programmed.
+
 
 Step 1: Download a Prebuilt eMMC Image
----------------------------------------
+--------------------------------------
 
-Download the latest prebuilt eMMC image for your board from the
-`Synaptics Astra SDK Releases`_ page on GitHub
-(``https://github.com/synaptics-astra/sdk/releases``).
+Download from:
+`Synaptics Astra SDK Releases`_
 
-Select the image matching your board, for example:
+Example:
 
 * **sl2619** — ``sl2619_scarthgap_<version>.zip``
 
-Extract the downloaded archive. The resulting directory (``eMMCimg``) contains
-all partition sub-images and the image list files required for flashing.
+Extract to get ``eMMCimg`` directory inside USB pen drive.
 
 .. note::
 
-   When flashing the eMMC for the first time, copy ``emmc_image_list_full``
-   to ``emmc_image_list`` inside the ``eMMCimg`` directory on the USB drive.
-   This ensures the ``/factory_setting`` partition is formatted correctly.
-   Skipping this step causes the system to boot into maintenance mode.
+   For first-time flashing, copy the contents of``emmc_image_list_full`` to ``emmc_image_list``. These files are located in the ``eMMCimg`` directory.
+
 
 Step 2: Flash the eMMC from U-Boot
-------------------------------------
-
-Detailed SL261x flashing steps are also documented in `Synaptics Astra SDK Releases`_
-
-Copy the extracted ``eMMCimg`` directory to a FAT32-formatted USB drive and
-insert it into the board. At the U-Boot prompt run:
+----------------------------------
 
 .. code-block:: console
 
@@ -158,65 +232,52 @@ insert it into the board. At the U-Boot prompt run:
 
 .. note::
 
-   If ``usb reset`` reports ``0 Storage Device(s) found`` and only one USB
-   controller was detected, connect the USB drive to the USB Type-C USB 2.0
-   port (may require a USB Type-C to USB Type-A adaptor).
+   Use USB Type-C port if storage is not detected.
 
-The board will automatically reboot once flashing is complete and boot
-into Linux on the A55.
 
 Step 3: Flash the Zephyr Image via U-Boot
-----------------------------------------------
+-----------------------------------------
 
-After building the Zephyr application, the generated SPI image is located at:
+Generated file:
+Copy the generated ``spi_boot.bin`` file from the build output to the USB drive.
 
 .. code-block:: none
 
    build/<final_build_dir>/image/spi/spi_boot.bin
 
-**3a – Copy image to USB and enter U-Boot**
 
-Copy ``spi_boot.bin`` to a FAT32-formatted USB drive and insert it into the
-board. Power up in eMMC boot mode and interrupt the U-Boot autoboot sequence
-to reach the U-Boot prompt.
-
-**3b – Write Zephyr image to XSPI flash**
-
-Run the following commands at the U-Boot prompt:
+**3a – Load image**
 
 .. code-block:: console
 
    => usb reset
    => fatload usb 0 0x10000000 spi_boot.bin
+
+
+**3b – Flash to XSPI**
+
+.. code-block:: console
+
    => sf probe
    => sf erase 0 0x400000
    => sf write 0x10000000 0x0 0x400000
 
-**3c – Connect SD_BOOT jumper**
 
-After flashing, connect the **SD_BOOT** jumper near the XSPI flash to enable
-SPI boot mode on next reset.
+**3c – Enable SPI boot**
 
-This sequence:
+Connect the **SD_BOOT** jumper.
 
-* Initializes USB
-* Loads the Zephyr SPI image into RAM at ``0x10000000``
-* Probes the SPI flash
-* Erases the required flash region
-* Writes the Zephyr image to XSPI flash
-
-Reset or power-cycle the board. The Zephyr image will be loaded from
-XSPI flash and execute on the core.
 
 Boot Flow Summary
 -----------------
 
-1. Download prebuilt eMMC image from `Synaptics Astra SDK Releases`_
-2. Flash eMMC from U-Boot using ``usb2emmc``
-3. Board reboots into Linux on A55
-4. Connect SD_BOOT jumper (enables SPI boot)
-5. Flash Zephyr SPI image to XSPI from U-Boot
-6. Reset board — Zephyr runs on SL2619
+1. Flash eMMC (Linux)
+2. Boot A55 Linux
+3. Flash Zephyr to XSPI
+4. Enable SPI boot (SD_BOOT)
+5. Reset board
+6. Zephyr runs
+
 
 References
 **********
