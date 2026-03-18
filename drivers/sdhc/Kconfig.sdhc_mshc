@@ -1,0 +1,13 @@
+# Copyright (c) 2025 Synaptics, Inc.
+# SPDX-License-Identifier: Apache-2.0
+
+config SDHC_MSHC
+	bool "Synopsys DWC MSHC driver"
+	default y
+	depends on DT_HAS_SNPS_MSHC_ENABLED
+	select SDHC_SUPPORTS_NATIVE_MODE
+	select PINCTRL
+	select EVENTS
+	select REGULATOR
+	help
+	  Synopsys DWC Mobile Storage Host Controller for SD/SDIO/MMC.

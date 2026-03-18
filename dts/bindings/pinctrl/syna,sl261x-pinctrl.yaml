@@ -1,0 +1,56 @@
+# Copyright (c) 2026 Synaptics, Inc.
+# SPDX-License-Identifier: Apache-2.0
+
+description: |
+    Synaptics SL261x Pin controller Node
+    Based on pincfg-node.yaml binding.
+
+    Note: `bias-disable` is a default pin configuration. It will be applied in
+           case no `bias-foo` property is set.
+
+compatible: "syna,sl261x-pinctrl"
+
+include: base.yaml
+
+properties:
+  reg:
+    required: true
+
+child-binding:
+  description: |
+      This binding gives a base representation of the Synaptics pins configuration
+
+  include:
+    - name: pincfg-node.yaml
+      property-allowlist:
+        - bias-disable
+        - bias-enable
+        - bias-pull-down
+        - bias-pull-up
+        - drive-strength
+        - input-disable
+        - input-enable
+        - input-schmitt-disable
+        - input-schmitt-enable
+        - slew-rate
+
+  properties:
+    pincfg:
+      type: int
+      description: |
+        Register offset of pin configuration (drive strength, slew-rate etc.).
+    pinmux:
+      required: true
+      type: int
+      description: |
+        Pin muxing configuration. The bitfield contains the following fields:
+        - ctrl [ 0.. 2]: Pinmux controller (0..2): in GBL
+        - bit  [ 3.. 7]: Bit offset in register for pinmux configuration
+        - mode [ 8..10]: Alternate function
+        - mask [11..14]: Mask for mode/alternate function setting
+        - reg  [16..23]: Register offset for pinmux configuration
+        - cfg  [24..31]: Register offset for pin configuration
+
+        To simplify the usage, macros are available to generate the "pinmux"
+        field:
+        - SLXXX_GBL_PINMUX(reg, bit, mode, cfg)

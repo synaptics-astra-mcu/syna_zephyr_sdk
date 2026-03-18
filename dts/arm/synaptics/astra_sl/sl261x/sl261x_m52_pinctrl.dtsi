@@ -1,0 +1,89 @@
+/*
+ * Copyright (c) 2026 Synaptics, Inc.
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
+#include <zephyr/dt-bindings/pinctrl/syna-sl261x-pinctrl.h>
+
+/ {
+	soc {
+		pinctrl_gbl: pin-controller@58025b00 { /* GBL */
+			compatible = "syna,sl261x-pinctrl";
+			reg = <0x58025b00 0xF>, <0x58025c00 0x164>;
+			reg-names = "pinmux", "pincfg";
+
+			/omit-if-no-ref/ uart0_rx_b: uart0-rx-b {
+				pinmux = <SLXXX_GBL_PINMUX(0x0,  0, 5, 0x00)>;
+			};
+
+			/omit-if-no-ref/ uart0_tx_b: uart0-tx-b {
+				pinmux = <SLXXX_GBL_PINMUX(0x8, 24, 6, 0x78)>;
+			};
+
+			/omit-if-no-ref/ i2c0_sda: i2c0-sda {
+				pinmux = <SLXXX_GBL_PINMUX(0xc, 6, 1, 0x88)>;
+			};
+
+			/omit-if-no-ref/ i2c0_scl: i2c0-scl {
+				pinmux = <SLXXX_GBL_PINMUX(0xc, 9, 1, 0x8c)>;
+			};
+
+			/omit-if-no-ref/ uart0_tx: uart0-tx {
+				pinmux = <SLXXX_GBL_PINMUX(0xc, 12, 1, 0x90)>;
+			};
+
+			/omit-if-no-ref/ uart0_rx: uart0-rx {
+				pinmux = <SLXXX_GBL_PINMUX(0xc, 15, 1, 0x94)>;
+			};
+
+			/omit-if-no-ref/ xspi_cs0: xspi-cs0 {
+				pinmux = <SLXXX_GBL_PINMUX(0x8, 0, 1, 0x58)>;
+			};
+
+			/omit-if-no-ref/ xspi_data0: xspi-data0 {
+				pinmux = <SLXXX_GBL_PINMUX(0x8, 3, 1, 0x5C)>;
+			};
+
+			/omit-if-no-ref/ xspi_data1: xspi-data1 {
+				pinmux = <SLXXX_GBL_PINMUX(0x8, 6, 1, 0x60)>;
+			};
+
+			/omit-if-no-ref/ xspi_data2: xspi-data2 {
+				pinmux = <SLXXX_GBL_PINMUX(0x8, 9, 1, 0x64)>;
+			};
+
+			/omit-if-no-ref/ xspi_data3: xspi-data3 {
+				pinmux = <SLXXX_GBL_PINMUX(0x8, 12, 1, 0x68)>;
+			};
+
+			/omit-if-no-ref/ xspi_clk: xspi-clk {
+				pinmux = <SLXXX_GBL_PINMUX(0x8, 15, 1, 0x6c)>;
+			};
+
+			/omit-if-no-ref/ xspi_clk_n: xspi-clk-n {
+				pinmux = <SLXXX_GBL_PINMUX(0x8, 18, 1, 0x70)>;
+			};
+
+			/omit-if-no-ref/ xspi_dqs: xspi-dqs {
+				pinmux = <SLXXX_GBL_PINMUX(0x8, 21, 1, 0x74)>;
+			};
+
+			/omit-if-no-ref/ spim_clk: spim-clk {
+				pinmux = <SLXXX_GBL_PINMUX(0x4, 9, 1, 0x34)>;
+			};
+
+			/omit-if-no-ref/ spim_cs3: spim-cs3 {
+				pinmux = <SLXXX_GBL_PINMUX(0x4, 3, 1, 0x2c)>;
+			};
+
+			/omit-if-no-ref/ spim_sdi: spim-sdi {
+				pinmux = <SLXXX_GBL_PINMUX(0x4, 12, 1, 0x38)>;
+			};
+
+			/omit-if-no-ref/ spim_sdo: spim-sdo {
+				pinmux = <SLXXX_GBL_PINMUX(0x4, 6, 1, 0x30)>;
+			};
+		};
+	};
+};

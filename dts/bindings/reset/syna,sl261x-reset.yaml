@@ -1,0 +1,21 @@
+# Copyright (c) 2026 Synaptics, Inc.
+# SPDX-License-Identifier: Apache-2.0
+
+title: Synaptics SL261X Reset Driver
+
+description: |
+  Synaptics SL261X Reset driver bindings.
+
+include: [base.yaml, reset-controller.yaml]
+
+compatible: "syna,sl261x-reset"
+
+properties:
+  reg:
+    required: true
+
+  "#reset-cells":
+    const: 1
+
+reset-cells:
+- id

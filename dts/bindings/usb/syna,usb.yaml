@@ -1,0 +1,8 @@
+# Copyright (c) 2025 Synaptics, Inc.
+# SPDX-License-Identifier: Apache-2.0
+#
+description: Synaptics SR11X DWC2 compatible controller
+
+compatible: "syna,usb"
+
+include: ["snps,dwc2.yaml", pinctrl-device.yaml]

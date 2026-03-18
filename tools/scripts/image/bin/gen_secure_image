@@ -1,0 +1,183 @@
+#!/usr/bin/env python3
+
+""" %prog [options]
+"""
+
+""" Check version """
+import sys
+sys.dont_write_bytecode = True
+
+if sys.hexversion < 0x03040000:
+  raise Exception("ERROR: Python 3.4 or newer is required")
+
+""" Import modules """
+import os
+import argparse
+import configparser
+import shutil
+import subprocess
+
+from pathlib import Path
+#
+# Functions
+#
+
+def exec_cmd(args):
+  print("+ execute command: ", str(args))
+
+  p = subprocess.Popen(args, stdout=subprocess.PIPE, stderr=subprocess.PIPE, env=dict(os.environ))
+  (stdout, stderr) = p.communicate()
+  """ print(stdout.decode()) """
+  print(stderr.decode())
+  assert p.returncode == 0
+
+#
+# Classes
+#
+
+class GenSecureImage:
+  def __init__(self):
+    self.opts = argparse.Namespace()
+    self.opts.basedir_security = os.path.realpath(os.path.dirname(sys.argv[0]) + "/../..")
+
+  def parse_args(self):
+    """ parse command line arguments """
+    parser = argparse.ArgumentParser(description="Generate Secure Image")
+
+    parser.add_argument('--chip-name', nargs=1)
+    parser.add_argument('--chip-rev', nargs=1)
+    parser.add_argument('--market-id', nargs=1)
+    parser.add_argument('--code-type', nargs=1)
+    parser.add_argument('--custk-type', nargs=1, default=["2"])
+    parser.add_argument('--rsak-type', nargs=1, default=["0"])
+    parser.add_argument('--usb-boot', nargs=1, default=["0"])
+    parser.add_argument('--input-file', nargs=1)
+    parser.add_argument('--output-file', nargs=1)
+    parser.add_argument('--workdir-security-tools', nargs=1)
+    parser.add_argument('--workdir-security-keys', nargs=1)
+    parser.add_argument('--security-config-path', nargs=1)
+
+    parser.add_argument('--add-custk-store', type=int, default=1)
+    parser.add_argument('--add-ersak-store', type=int, default=1)
+    parser.add_argument('--clear', type=int, default=0)
+
+    self.opts = parser.parse_args(args=sys.argv[1:], namespace=self.opts)
+
+    assert(self.opts.chip_name is not None)
+    assert(self.opts.chip_rev is not None)
+    assert(self.opts.market_id is not None)
+    assert(self.opts.code_type is not None)
+    assert(self.opts.input_file is not None)
+    assert(self.opts.output_file is not None)
+
+    self.setup_workdir()
+
+  def setup_workdir(self):
+    """ print(self.opts) """
+    if self.opts.workdir_security_tools is None:
+      self.opts.workdir_security_tools = self.opts.basedir_security + "/tools"
+    else:
+      self.opts.workdir_security_tools = self.opts.workdir_security_tools[0]
+
+    if self.opts.workdir_security_keys is None:
+      self.opts.workdir_security_keys = self.opts.basedir_security + "/keys/chip/"
+      self.opts.workdir_security_keys = self.opts.workdir_security_keys + self.opts.chip_name[0]
+      self.opts.workdir_security_keys += "/" + self.opts.chip_rev[0]
+      self.opts.workdir_security_keys += "/" + "mid-%08x" % int(self.opts.market_id[0], 16)
+      self.opts.workdir_security_keys += "/" + "mrvl"
+      self.opts.workdir_security_keys += "/" + "codetype_%d" % int(self.opts.code_type[0])
+    else:
+      self.opts.workdir_security_keys = self.opts.workdir_security_keys[0]
+      self.opts.workdir_security_keys += "/" + "mid-%08x" % int(self.opts.market_id[0], 16)
+      self.opts.workdir_security_keys += "/" + "codetype_%d" % int(self.opts.code_type[0])
+
+    """ print(self.opts) """
+
+  def sign_image(self):
+    """ Parse config file """
+    if self.opts.security_config_path is None:
+      cfg_file = self.opts.workdir_security_keys + "/config"
+    else:
+      cfg_file = self.opts.security_config_path[0]
+
+    cfg = configparser.ConfigParser()
+    try:
+      cfg.read_file(open(cfg_file))
+    except:
+      print("WARNING: cannot open '%s'" % cfg_file);
+
+    cfg_secver_extrsak = cfg.getint('security_version', 'extrsak_store', fallback=0)
+    cfg_secver_image = cfg.getint('security_version', 'image_signing', fallback=0)
+    cfg_secver_image_mask = cfg.getint('security_version', 'image_signing_mask', fallback=0xff)
+    cfg_secver_style = cfg.get('signing_tool', 'security_version_style', fallback='mask')
+    cfg_extrsak_type = cfg.get('signing_tool', 'extrsak_type', fallback=self.opts.rsak_type[0])
+
+    if cfg_secver_style == 'mask':
+      cfg_secver_value = (1<<cfg_secver_image) - 1
+    elif cfg_secver_style == 'count':
+      cfg_secver_value = cfg_secver_image
+    else:
+      raise Exception("ERROR: invalid 'security_version_style")
+
+    """ print(hex(cfg_secver_value)) """
+
+    """ Command and arguments """
+    exec_bin = Path(self.opts.workdir_security_tools) / 'sign_image_v4'
+    exec_bin = exec_bin.as_posix()
+
+    if not os.access(exec_bin, os.X_OK):
+        exec_bin = Path(self.opts.workdir_security_tools).parent / 'lib' / 'sec_tools' / 'bin' / 'sign_image_v4'
+        exec_bin = exec_bin.as_posix()
+        if not os.access(exec_bin, os.X_OK):
+            exec_bin = Path(self.opts.workdir_security_tools) / 'lib' / 'sec_tools' / 'bin' / 'sign_image_v4'
+            exec_bin = exec_bin.as_posix()
+            if not os.access(exec_bin, os.X_OK):
+                exec_bin = shutil.which('sign_image_v4')
+    if not exec_bin:
+      raise Exception("can't find sign_image_v4")
+
+    cmd2run = [ exec_bin ]
+
+    cmd2run.extend(["-H", "0x20000000"])
+    cmd2run.extend(["-s", "32", "-z", "32"])
+    cmd2run.extend(["-T", cfg_extrsak_type])
+    cmd2run.extend(["-g"])
+    cmd2run.extend(["-d", self.opts.code_type[0]])
+    cmd2run.extend(["-l", "0x0"])
+    if self.opts.clear == 0:
+      cmd2run.extend(["-f"])
+      cmd2run.extend(["-t", self.opts.custk_type[0]])
+      cmd2run.extend(["-C", self.opts.workdir_security_keys + "/custk.bin"])
+    cmd2run.extend(["-m", "0x%x" % int(self.opts.market_id[0], 16), "-M", "0xffffffff"])
+    cmd2run.extend(["-e", hex(cfg_secver_value), "-E", hex(cfg_secver_image_mask)])
+    cmd2run.extend(["-S", self.opts.workdir_security_keys + "/extrsa.pem"])
+
+    if self.opts.add_custk_store:
+      cmd2run.extend(["-j", self.opts.workdir_security_keys + "/custk.keystore"])
+    if self.opts.add_ersak_store:
+      cmd2run.extend(["-k", self.opts.workdir_security_keys + "/extrsa.keystore"])
+
+    cmd2run.extend(["-y", self.opts.usb_boot[0]])
+    cmd2run.extend(["-i", self.opts.input_file[0]])
+    cmd2run.extend(["-o", self.opts.output_file[0]])
+
+    exec_cmd(cmd2run)
+
+#
+# Main
+#
+
+def main():
+  genSecImg = GenSecureImage()
+  genSecImg.parse_args()
+
+  """
+  print("\n")
+  print(genSecImg.opts)
+  """
+
+  genSecImg.sign_image()
+
+if __name__ == "__main__":
+  exitcode = main()
+  sys.exit(exitcode)

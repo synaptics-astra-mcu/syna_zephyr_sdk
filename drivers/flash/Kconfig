@@ -1,0 +1,12 @@
+# Copyright (c) 2025 Synaptics, Inc.
+# SPDX-License-Identifier: Apache-2.0
+
+#
+# Flash driver
+#
+
+if FLASH
+
+rsource "Kconfig.cadence_xspi"
+
+endif # FLASH

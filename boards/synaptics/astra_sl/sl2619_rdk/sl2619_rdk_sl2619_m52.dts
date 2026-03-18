@@ -1,0 +1,130 @@
+/*
+ * Copyright (c) 2026 Synaptics, Inc.
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
+/dts-v1/;
+#include <synaptics/astra_sl/sl261x/sl261x_m52.dtsi>
+#include <synaptics/astra_sl/sl261x/sl261x_m52_pinctrl.dtsi>
+#include <zephyr/dt-bindings/gpio/gpio.h>
+
+/ {
+	model = "Synaptics SL2610 RDK M52 Core";
+	compatible = "syna,sl261x-rdk";
+
+	chosen {
+		zephyr,console = &ns16550_uart0;
+		zephyr,shell-uart = &ns16550_uart0;
+		zephyr,sram = &dtcm;
+		zephyr,flash = &itcm;
+		zephyr,code-partition = &itcm;
+		zephyr,arch-cpu = &cpu_m52;
+		zephyr,flash-controller = &xspi;
+	};
+
+	aliases {
+		i2c-0 = &i2c0;
+	};
+};
+
+&xspi {
+	status = "okay";
+	pinctrl-0 = <&xspi_data0 &xspi_data1 &xspi_data2 &xspi_data3 &xspi_dqs
+		     &xspi_clk &xspi_clk_n &xspi_cs0>;
+	pinctrl-names = "default";
+	use-direct-mode;
+
+	flash1: mt25qu02g@0 {
+		compatible = "micron,mt25qu02g";
+		reg = <0>;
+		size = <DT_SIZE_M(256*8)>; /* in bits */
+		status = "okay";
+	};
+};
+
+&xspi_data0 {
+	drive-strength = <3>;
+};
+
+&xspi_data1 {
+	drive-strength = <3>;
+};
+
+&xspi_data2 {
+	drive-strength = <3>;
+};
+
+&xspi_data3 {
+	drive-strength = <3>;
+};
+
+&xspi_dqs {
+	drive-strength = <3>;
+};
+
+&xspi_clk {
+	drive-strength = <3>;
+};
+
+&xspi_clk_n {
+	drive-strength = <3>;
+};
+
+&xspi_cs0 {
+	drive-strength = <3>;
+};
+
+&i2c0 {
+	status = "okay";
+	clock-frequency = <I2C_BITRATE_STANDARD>;
+	pinctrl-0 = <&i2c0_sda &i2c0_scl>;
+	pinctrl-names = "default";
+
+	ina3221@42 {
+		compatible = "ti,ina3221";
+		reg = <0x42>;
+		shunt-resistors = <10000 10000 10000>;
+	};
+};
+
+&i2c0_sda {
+	bias-pull-up;
+	drive-strength = <8>;
+};
+
+&i2c0_scl {
+	bias-pull-up;
+	drive-strength = <8>;
+};
+
+&ns16550_uart0 {
+	pinctrl-0 = <&uart0_rx &uart0_tx>;
+	pinctrl-names = "default";
+	clock-frequency = <25000000>;
+	current-speed = <115200>;
+	dlf = <0>;
+	status = "okay";
+};
+
+&gpio0 {
+	status = "okay";
+};
+
+&gpio1 {
+	status = "okay";
+};
+
+&gpio2 {
+	status = "okay";
+};
+
+&gpio3 {
+	status = "okay";
+};
+
+&spim {
+	status = "okay";
+	pinctrl-0 = <&spim_clk &spim_sdi &spim_sdo &spim_cs3>;
+	pinctrl-names = "default";
+};

@@ -1,0 +1,11 @@
+# Copyright (c) 2026 Synaptics, Inc.
+# SPDX-License-Identifier: Apache-2.0
+
+if RESET
+
+# zephyr-keep-sorted-start
+rsource "Kconfig.syna_sr100"
+rsource "Kconfig.syna_sl261x"
+# zephyr-keep-sorted-stop
+
+endif # RESET

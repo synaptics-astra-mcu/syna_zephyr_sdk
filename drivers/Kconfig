@@ -1,0 +1,16 @@
+# Copyright (c) 2025 Synaptics, Inc.
+# SPDX-License-Identifier: Apache-2.0
+
+menu "Device Drivers"
+
+# zephyr-keep-sorted-start
+rsource "clock_control/Kconfig"
+rsource "flash/Kconfig"
+rsource "misc/Kconfig"
+rsource "pinctrl/Kconfig"
+rsource "reset/Kconfig"
+rsource "sdhc/Kconfig"
+rsource "watchdog/Kconfig"
+# zephyr-keep-sorted-stop
+
+endmenu

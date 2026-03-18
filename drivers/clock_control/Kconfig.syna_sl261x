@@ -1,0 +1,9 @@
+# Copyright (c) 2026 Synaptics, Inc.
+# SPDX-License-Identifier: Apache-2.0
+
+config CLOCK_CONTROL_SYNA_SL261X
+	bool "Synaptics SL261X Clock Control Driver"
+	default y
+	depends on DT_HAS_SYNA_SL261X_CLOCK_ENABLED
+	help
+	  Enable clock control support for Synaptics SL261X SoC series.

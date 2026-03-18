@@ -1,0 +1,9 @@
+# Copyright (c) 2026 Synaptics, Inc.
+# SPDX-License-Identifier: Apache-2.0
+
+config RESET_SYNA_SL261X
+	bool "Synaptics SL261X reset driver"
+	default y
+	depends on DT_HAS_SYNA_SL261X_RESET_ENABLED
+	help
+	  This option enables the reset driver for Synaptics SL261X series SOC.
