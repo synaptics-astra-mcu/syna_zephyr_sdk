@@ -56,7 +56,7 @@ elseif(CONFIG_SOC_SL2619_M52)
       set_property(GLOBAL APPEND PROPERTY extra_post_build_commands
         COMMAND ${Python3_EXECUTABLE} ${SL261X_IMGGEN}
             --outdir ${CMAKE_BINARY_DIR}/
-            --a55_image ${SL261X_A55_IMG}
+            --a55_image ${SL261X_A55_IMG}/zephyr/zephyr.bin
       )
     endif()
   endif()
