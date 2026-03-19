@@ -12,6 +12,7 @@
  * for the Synaptics SR22x SoC.
  */
 
+#include <zephyr/linker/linker-defs.h>
 #include <zephyr/kernel.h>
 #include <zephyr/device.h>
 #include <zephyr/init.h>
@@ -161,16 +162,9 @@ static int noinit_sec_clean(void)
 	volatile uint32_t *ptr;
 	volatile uint32_t *end;
 
-	/* Initialize idle stack (0x30002120, 256B) - right after interrupt stacks */
+	/* Initialize uninitialized DTCM - from the point after interrupt stacks to end */
 	ptr = (volatile uint32_t *)((uintptr_t)z_interrupt_stacks+CONFIG_ISR_STACK_SIZE);
-	end = ptr + (CONFIG_IDLE_STACK_SIZE / sizeof(uint32_t));
-	while (ptr < end) {
-		sys_write32(0x00000000U, (uintptr_t)ptr++);
-	}
-
-	/* Initialize z_main_stack (0x30002220, 1KB) */
-	ptr = (volatile uint32_t *)z_main_stack;
-	end = ptr + (CONFIG_MAIN_STACK_SIZE / sizeof(uint32_t));
+	end = (uint32_t *)&__kernel_ram_end;
 	while (ptr < end) {
 		sys_write32(0x00000000U, (uintptr_t)ptr++);
 	}

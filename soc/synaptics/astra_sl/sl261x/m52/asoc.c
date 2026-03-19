@@ -153,6 +153,5 @@ void release_asoc(uint32_t initvtor)
 int asoc_setup(void)
 {
     setup_soc();
-    LOG_INF("A55 setup done...");
     return 0;
 }

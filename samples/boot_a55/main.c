@@ -12,10 +12,5 @@
 
 int main(int argc, char *argv[])
 {
-    printk("Synaptics Zephyr!!!\n");
-
     release_asoc(0xE2300000);
-    while(1) {
-        k_msleep(1000);
-    }
 }
