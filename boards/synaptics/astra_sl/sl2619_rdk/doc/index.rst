@@ -128,10 +128,10 @@ Initialize the workspace folder (``syna_zephyr``):
 
 .. code-block:: console
 
-   cd ~/syna_zephyr/zephyr
+   cd ~/syna_zephyr
    west update
-   west sdk install --version 1.0.0 --toolchains arm-zephyr-eabi aarch64-zephyr-elf
    pip install -r ~/syna_zephyr/zephyr/scripts/requirements.txt
+   west sdk install --version 1.0.0 --toolchains arm-zephyr-eabi aarch64-zephyr-elf
 
 **Additional requirement (GICv2 support)**
 
@@ -160,7 +160,7 @@ Before building, set the toolchain environment for each target.
 
 .. code-block:: console
 
-   cd syna_zephyr/zephyr
+   cd ~/syna_zephyr/zephyr
 
    export ZEPHYR_TOOLCHAIN_VARIANT=zephyr
    export ZEPHYR_SDK_INSTALL_DIR=<path/to/zephyr-sdk-1.0.0>
@@ -174,14 +174,23 @@ Before building, set the toolchain environment for each target.
 
 .. code-block:: console
 
-   export ZEPHYR_TOOLCHAIN_VARIANT=gnuarmemb
-   export GNUARMEMB_TOOLCHAIN_PATH=<path/to/arm-gnu-toolchain>
+   export ZEPHYR_TOOLCHAIN_VARIANT=zephyr
+   export ZEPHYR_SDK_INSTALL_DIR=<path/to/zephyr-sdk-1.0.0>
 
    west build -b sl2619_rdk/sl2619/m52 \
        ../zephyr_srsdk/samples/boot_a55 \
        -p auto \
        -DSL261X_A55_OUT="../../build/a55_image" \
        -d build/<final_build_dir>
+
+**Expected build output logs**
+
+.. code-block:: none
+
+   bootinfo: offset=0x0, size=20480 bytes, part_size=20480 bytes
+   preboot: offset=0x5000, size=183572 bytes, part_size=524288 bytes
+   a55_zephyr: offset=0x300000, size=109175 bytes, part_size=524288 bytes
+   SPI boot image /home/<USER>/syna_zephyr/zephyr/build/final_build_dir/image/spi/spi_boot.bin file 3670016 bytes
 
 
 Serial Console Setup
@@ -225,6 +234,9 @@ Extract to get ``eMMCimg`` directory inside USB pen drive.
 Step 2: Flash the eMMC from U-Boot
 ----------------------------------
 
+Before flashing, follow the steps to enter into the U-Boot prompt described in
+`U-Boot prompt with SU boot <https://synaptics-astra.github.io/doc/v/latest/linux/index.html#u-boot-prompt-with-su-boot>`_.
+
 .. code-block:: console
 
    => usb reset
@@ -241,10 +253,12 @@ Step 3: Flash the Zephyr Image via U-Boot
 Generated file:
 Copy the generated ``spi_boot.bin`` file from the build output to the USB drive.
 
+
 .. code-block:: none
 
    build/<final_build_dir>/image/spi/spi_boot.bin
 
+Enter into the U-Boot prompt before proceeding with the following steps.
 
 **3a – Load image**
 
@@ -265,7 +279,7 @@ Copy the generated ``spi_boot.bin`` file from the build output to the USB drive.
 
 **3c – Enable SPI boot**
 
-Connect the **SD_BOOT** jumper.
+Connect the **SD_BOOT** jumper and reset the board.
 
 
 Boot Flow Summary
@@ -286,4 +300,4 @@ References
 
 .. _Synaptics website: https://www.synaptics.com/products/embedded-processors/sl2610-product-line
 .. _Synaptics Astra Machina Eval platform website: https://synaptics-astra.github.io/doc/v/latest/hw/sl2600.html
-.. _Synaptics Astra SDK Releases: https://synaptics-astra.github.io/doc/v/latest/linux/index.html
+.. _Synaptics Astra SDK Releases: https://github.com/synaptics-astra/sdk/releases
