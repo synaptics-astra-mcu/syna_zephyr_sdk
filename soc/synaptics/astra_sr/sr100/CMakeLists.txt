@@ -20,7 +20,7 @@ if(SRSDK_IMGGEN)
       -B0
       -flash_image
       -sdk_secured
-      -spk B0_Input_examples/spk_rc3_0_secure_otpk_0605.bin
+      -spk B0_Input_examples/spk_rc4_1_0_secure_otpk.bin
       -apbl B0_Input_examples/sr100_b0_bootloader_ver_0x0134_ASIC_Release.axf
       -m55_image ${CMAKE_BINARY_DIR}/zephyr/${KERNEL_NAME}.elf
       -model ''
