@@ -49,7 +49,7 @@ Supported Features
 Connections and IOs
 ===================
 
-A detailed description on the hardware connections, IOs and peripherals can be found on the
+A detailed description of the hardware connections, IOs and peripherals can be found on the
 `Synaptics Astra MCU website`_ and in the `Synaptics Platform Guide`_.
 
 Programming and Debugging
@@ -57,7 +57,7 @@ Programming and Debugging
 
 .. zephyr:board-supported-runners::
 
-The Synaptics SR110 SoC needs to be eMMC flashed prior to running a Zephyr application. This can be
+The Synaptics SR110 SoC must be flashed before running a Zephyr application. This can be
 achieved by following Synaptics Astra Machina Eval platform instructions.
 
 Setup
@@ -87,24 +87,10 @@ Now switch to the WSL terminal and run:
    pip install --upgrade pip
    pip install west
    sudo apt install zip unzip usbutils openocd
-
-Install GNU Arm Embedded toolchain.
-----------------------------------
-.. code-block:: console
-
-   wget https://developer.arm.com/-/media/Files/downloads/gnu/15.2.rel1/binrel/arm-gnu-toolchain-15.2.rel1-x86_64-arm-none-eabi.tar.xz
-   tar xJf arm-gnu-toolchain-15.2.rel1-x86_64-arm-none-eabi.tar.xz -C $HOME
-   export GNUARMEMB_TOOLCHAIN_PATH="$HOME/arm-gnu-toolchain-15.2.rel1-x86_64-arm-none-eabi"
-   export ZEPHYR_TOOLCHAIN_VARIANT=gnuarmemb
-   export PATH="$PATH:$HOME/arm-gnu-toolchain-15.2.rel1-x86_64-arm-none-eabi/bin"
-
-Make sure the toolchain is available in your environment (e.g., added to PATH).
-
- SDK Tools Setup
----------------
-
-Install the required SDK tools by following the
-`Zephyr Getting Started Guide <https://docs.zephyrproject.org/latest/develop/getting_started/index.html>`_.
+   sudo apt install ninja-build
+   sudo apt install binutils-arm-none-eabi
+   pip install cmake
+   
 
 Linux
 -----
@@ -122,30 +108,10 @@ On a Linux host terminal, run:
    pip install --upgrade pip
    pip install west
    sudo apt install zip unzip usbutils openocd
+   sudo apt install ninja-build
+   sudo apt install binutils-arm-none-eabi
+   pip install cmake
 
-Install GNU Arm Embedded toolchain.
-----------------------------------
-.. code-block:: console
-
-   wget https://developer.arm.com/-/media/Files/downloads/gnu/15.2.rel1/binrel/arm-gnu-toolchain-15.2.rel1-x86_64-arm-none-eabi.tar.xz
-   tar xJf arm-gnu-toolchain-15.2.rel1-x86_64-arm-none-eabi.tar.xz -C $HOME
-   export GNUARMEMB_TOOLCHAIN_PATH="$HOME/arm-gnu-toolchain-15.2.rel1-x86_64-arm-none-eabi"
-   export ZEPHYR_TOOLCHAIN_VARIANT=gnuarmemb
-   export PATH="$PATH:$HOME/arm-gnu-toolchain-15.2.rel1-x86_64-arm-none-eabi/bin"
-
-Make sure the toolchain is available in your environment (e.g., added to PATH).
-
-SDK Tools Setup
----------------
-
-Install the required SDK tools by following the
-`Zephyr Getting Started Guide <https://docs.zephyrproject.org/latest/develop/getting_started/index.html>`_.
-follow the steps from section "Select and Update OS" till step 3 of "Get Zephyr and install Python dependencies" section.
-
-
-> sudo apt install ninja-build
-> sudo apt install binutils-arm-none-eabi
-> pip install cmake
 
 Initialization
 ==============
@@ -154,13 +120,13 @@ Next, obtain ``zephyr_srsdk`` either by ``west init`` or from a ``.zip`` file.
 
 Option 1: west init
 
-The first step is to initialize the workspace folder (``syna_zephyr``) where
+The first step is to initialize the workspace folder (``~/syna_zephyr``) where
 the example application and all Zephyr modules will be cloned. Run the following
 command:
 
 .. code-block:: console
 
-   west init -m https://github.com/synaptics-astra-mcu/syna_zephyr_sdk.git --mr main  syna_zephyr
+   west init -m https://github.com/synaptics-astra-mcu/syna_zephyr_sdk.git --mr main  ~/syna_zephyr
 
 Option 2: .zip file
 
@@ -173,25 +139,25 @@ Copy the ``zephyr_srsdk-main.zip`` file into ``~/syna_zephyr`` and run:
    mv zephyr_srsdk-main zephyr_srsdk
    west init -l .
 
- # update Zephyr modules
-   cd syna_zephyr/zephyr
+
+**Common setup (required for both options)**
+
+.. code-block:: console
+
+   cd ~/syna_zephyr
    west update
+   pip install -r ~/syna_zephyr/zephyr/scripts/requirements.txt
+   west sdk install --version 1.0.0
 
 For the image generation scripts, clone the following repository:
 
 .. code-block:: console
 
+   cd ~/syna_zephyr
    git clone https://github.com/synaptics-astra-mcu/srsdk_tools.git
 
-These tools require the python package ``pycrypto`` and the executable
+These tools require the python package ``pycryptodome`` and the executable
 ``arm-none-eabi-objcopy`` from the ARM GNU toolchain in your PATH.
-
-Finally, enter the ``zephyr_srsdk`` directory:
-
-.. code-block:: console
-
-   cd zephyr_srsdk
-
 
 Building
 ========
@@ -208,13 +174,20 @@ You can also try the shell and blinky examples:
 
 .. code-block:: console
 
-   west build -b sr100_rdk ../zephyr/samples/basic/blinky
+   cd ~/syna_zephyr/zephyr_srsdk
+   export ZEPHYR_TOOLCHAIN_VARIANT=zephyr
+   export ZEPHYR_SDK_INSTALL_DIR=<path/to/zephyr-sdk-1.0.0>
    west build -b sr100_rdk ../zephyr/samples/subsys/shell/shell_module
+   west build -b sr100_rdk ../zephyr/samples/basic/blinky
+   
 
 For a clean rebuild:
 
 .. code-block:: bash
 
+   cd ~/syna_zephyr/zephyr_srsdk
+   export ZEPHYR_TOOLCHAIN_VARIANT=zephyr
+   export ZEPHYR_SDK_INSTALL_DIR=<path/to/zephyr-sdk-1.0.0>
    west build -p always -b sr100_rdk ../zephyr/samples/subsys/shell/shell_module
 
 Flashing
@@ -223,19 +196,19 @@ Flashing
 For installation on the target, the Astra image generator scripts need to be
 invoked to create a combined image (SPK, APBL/bootloader & M55-firmware).
 
-The default path to the image generator is ``syna_zephyr/srsdk_tools`` but can
+The default path to the image generator is ``~/syna_zephyr/srsdk_tools`` but can
 be modified with the parameter ``-DSRSDK_IMGGEN=path`` when calling ``west build``.
 The resulting image file is stored in ``build/zephyr/zephyr_flash.bin``.
 
-Connect the board using the USB-C connector to your host machine. Make sure you can see the
-CMSIS-DAP endpoint using ``lsusb``:
+Connect the SR110 board's J14 port using a USB-C connector to your host machine for flashing (top-view-of-astra-machina-micro-sr110_).
+Make sure you can see the CMSIS-DAP endpoint using ``lsusb``:
 
 Debugging on WSL
 ----------------
 
 To use ``west debugserver``, the CMSIS-DAP device must be attached to WSL.
 
-Use ``usbipd`` from Windows Powersehll with admin permission to list and attach the device:
+Use ``usbipd`` from Windows PowerShell with admin permission to list and attach the device:
 
 .. code-block:: bash
    winget install --id=dorssel.usbipd-win -e # Install usbipd if not already installed
@@ -257,16 +230,29 @@ Next, run the ``west debugserver`` command.
 
 .. code-block:: console
 
-   cd syna_zephyr/zephyr_srsdk
+   cd ~/syna_zephyr/zephyr_srsdk
    west debugserver
 
 Now, in a separate terminal, run the flashing script provided by Synaptics:
 
 .. code-block:: console
 
-   cd syna_zephyr/srsdk_tools
+   cd ~/syna_zephyr/srsdk_tools
    python openocd_flash.py ../zephyr_srsdk/build/zephyr/zephyr_flash.bin 0x0 0x0 1
 
+Verify shell module application is running
+------------------------------------------
+
+After flashing the image, disconnect USB-C from the SR110 board's J14 port. Then connect power to the SR110 board through the J13 UART port by connecting it to the host machine.
+
+For logs and shell interaction, connect GPIO 23 and GPIO 24 from J25 to the RX and TX pins of a USB-to-UART converter, respectively. Then connect the USB-to-UART converter to your host machine. refer to the `Synaptics Astra MCU website`_ and the `Synaptics Platform Guide`_ for more details on the pin connections.
+
+On the host, open a serial terminal (for example, Tera Term) on the corresponding COM port at 115200 baud. You should see the shell prompt:
+
+.. code-block:: console
+
+   uart:~$
+   
 References
 **********
 
@@ -275,3 +261,4 @@ References
 .. _Synaptics website: https://www.synaptics.com/assets/product-brief/sr-series
 .. _Synaptics Astra MCU website: https://synaptics-astra-mcu.github.io/doc/v/latest/platform/Astra_Machina_Micro_SR100_Series_Evaluation_Platform_Kit_RevC_UG_511-001445-02_RevA.html
 .. _Synaptics Platform Guide: https://synaptics-astra-mcu.github.io/doc/v/latest/srsdk/docs/SR110/SR110_platform_Guide.html
+.. _top-view-of-astra-machina-micro-sr110: https://synaptics-astra-mcu.github.io/doc/v/latest/platform/Astra_Machina_Micro_SR100_Series_Evaluation_Platform_Kit_RevC_UG_511-001445-02_RevA.html#top-view-of-astra-machina-micro-sr110
