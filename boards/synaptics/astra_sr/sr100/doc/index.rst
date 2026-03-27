@@ -247,7 +247,7 @@ After flashing the image, disconnect USB-C from the SR110 board's J14 port. Then
 
 For logs and shell interaction, connect GPIO 23 and GPIO 24 from J25 to the RX and TX pins of a USB-to-UART converter, respectively. Then connect the USB-to-UART converter to your host machine. refer to the `Synaptics Astra MCU website`_ and the `Synaptics Platform Guide`_ for more details on the pin connections.
 
-On the host, open a serial terminal (for example, Tera Term) on the corresponding COM port at 115200 baud. You should see the shell prompt:
+On the host, open a serial terminal (for example, Tera Term) on the corresponding COM port at 230400 baud. You should see the shell prompt:
 
 .. code-block:: console
 
