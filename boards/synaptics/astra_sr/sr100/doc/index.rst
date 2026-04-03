@@ -238,7 +238,7 @@ Now, in a separate terminal, run the flashing script provided by Synaptics:
 .. code-block:: console
 
    cd ~/syna_zephyr/srsdk_tools
-   python openocd_flash.py ../zephyr_srsdk/build/zephyr/zephyr_flash.bin 0x0 0x0 1
+   python openocd_flash.py --openocd <path/openocd.exe> --flash-offset 0x0 --file-offset 0x0 --cfg_path ~/syna_zephyr/srsdk_tools/Input_Config/sr110_m55.cfg --image ~/syna_zephyr/zephyr_srsdk/build/zephyr/zephyr_flash.bin
 
 Verify shell module application is running
 ------------------------------------------
