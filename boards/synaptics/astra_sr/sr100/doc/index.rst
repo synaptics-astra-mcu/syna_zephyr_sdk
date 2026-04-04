@@ -213,7 +213,7 @@ Use ``usbipd`` from Windows PowerShell with admin permission to list and attach 
 .. code-block:: bash
    winget install --id=dorssel.usbipd-win -e # Install usbipd if not already installed
    usbipd list
-   usbipd bind --busid <bus_id> --force # Bind the device to WSL 
+   usbipd bind --busid <bus_id> --force # Bind the device to WSL
    usbipd attach --wsl --busid <bus_id> # Attach the device to WSL
 
 .. code-block:: console
@@ -233,12 +233,33 @@ Next, run the ``west debugserver`` command.
    cd ~/syna_zephyr/zephyr_srsdk
    west debugserver
 
-Now, in a separate terminal, run the flashing script provided by Synaptics:
+Flashing image using WSL/Linux
+------------------------------
+
+To flash the image, need to terminate the debug server if it's running, and then run the following command:
 
 .. code-block:: console
 
    cd ~/syna_zephyr/srsdk_tools
-   python openocd_flash.py --openocd <path/openocd.exe> --flash-offset 0x0 --file-offset 0x0 --cfg_path ~/syna_zephyr/srsdk_tools/Input_Config/sr110_m55.cfg --image ~/syna_zephyr/zephyr_srsdk/build/zephyr/zephyr_flash.bin
+   python openocd_flash.py --openocd <path/openocd> --flash-offset 0x0 --file-offset 0x0 --cfg_path ~/syna_zephyr/srsdk_tools/Input_Config/sr100_m55.cfg --image <path_to_sdk>/build/zephyr/zephyr_flash.bin
+
+Flashing image using Windows
+----------------------------
+
+To flash the image, need to terminate the debug server if it's running, unbind the CMSIS-DAP device from WSL using below command in Windows PowerShell with admin permission:
+
+.. code-block:: bash
+   usbipd list
+   usbipd unbind --busid <bus_id> --force # Unbind the device from WSL
+
+Then run the following command in Windows PowerShell / Command Prompt:
+
+.. code-block:: console
+
+   cd ~/syna_zephyr/srsdk_tools
+   python openocd_flash.py --openocd <path/openocd.exe> --flash-offset 0x0 --file-offset 0x0 --cfg_path <path/srsdk_tools\Input_Config\sr100_m55.cfg> --image <path_to_sdk>\build\zephyr\zephyr_flash.bin>
+
+
 
 Verify shell module application is running
 ------------------------------------------
