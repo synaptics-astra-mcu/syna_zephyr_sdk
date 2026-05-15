@@ -1,9 +1,0 @@
-# Copyright (c) 2026 Synaptics Incorporated
-# SPDX-License-Identifier: Apache-2.0
-
-config PINCTRL_SYNA_SL261X
-	bool "Pin controller driver for Synaptics SL261X MCUs"
-	default y
-	depends on DT_HAS_SYNA_SL261X_PINCTRL_ENABLED
-	help
-	  Enable pin controller driver for Synaptics SL261X MCUs

@@ -1,5 +1,0 @@
-#layout         partition_name          erase/format    first action    write_protection
-20K             bootinfo                default         default         none
-512K            preboot                 default         default         none
-2540K           temp                    default         default         none
-512K            a55_zephyr              default         default         none

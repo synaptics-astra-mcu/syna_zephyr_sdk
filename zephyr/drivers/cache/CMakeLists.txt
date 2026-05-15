@@ -1,8 +1,0 @@
-# SPDX-License-Identifier: Apache-2.0
-
-zephyr_syscall_header(${ZEPHYR_BASE}/include/zephyr/cache.h)
-
-zephyr_library()
-zephyr_library_property(ALLOW_EMPTY TRUE)
-
-zephyr_library_sources_ifdef(CONFIG_CACHE_ARM_AHB cache_arm_ahb.c)

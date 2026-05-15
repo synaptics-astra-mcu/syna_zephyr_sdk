@@ -1,9 +1,0 @@
-board:
-  name: sl2619_rdk
-  full_name: Synaptics SL2619 RDK
-  vendor: synaptics
-  socs:
-  - name: sl2619
-    variants:
-    - name: ddrless
-      cpucluster: a55

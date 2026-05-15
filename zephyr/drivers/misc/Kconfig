@@ -1,6 +1,0 @@
-# Miscellaneous drivers not exposing Zephyr Device Driver API
-
-# Copyright (c) 2026 Synaptics Incorporated
-# SPDX-License-Identifier: Apache-2.0
-
-rsource "syna_aon_event_gpio/Kconfig"

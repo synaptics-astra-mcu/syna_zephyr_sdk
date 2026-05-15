@@ -1,8 +1,0 @@
-# Copyright 2026 Synaptics Incorporated
-# SPDX-License-Identifier: Apache-2.0
-
-if SDHC
-
-rsource "Kconfig.sdhc_mshc"
-
-endif # SDHC
