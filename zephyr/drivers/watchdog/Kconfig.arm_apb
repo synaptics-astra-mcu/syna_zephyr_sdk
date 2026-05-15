@@ -1,0 +1,22 @@
+# ARM-APB Watchdog
+
+# Copyright (c) 2026 Synaptics Incorporated
+# SPDX-License-Identifier: Apache-2.0
+
+config WDT_ARM_APB
+	bool "ARM APB Watchdog driver"
+	default y
+	depends on DT_HAS_ARM_APB_WDT_ENABLED
+	select RUNTIME_NMI
+	select HAS_WDT_DISABLE_AT_BOOT
+	help
+	  Enable driver for the ARM "APB" watchdog.
+
+config WDT_ARM_APB_DEFAULT_TIMEOUT_MAX
+	int "Default timeout value of the WDT in ms"
+	depends on WDT_ARM_APB
+	default 1000
+	range 1 $(UINT32_MAX)
+	help
+	  Sets the initial timeout value for the watchdog in ms if enabled at
+	  boot.

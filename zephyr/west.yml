@@ -1,0 +1,14 @@
+manifest:
+  projects:
+    - name: zephyr
+      url: https://github.com/zephyrproject-rtos/zephyr
+      revision: a066b866be84785ecaa5266439ba0532a3205cc6
+      path: zephyr
+      west-commands: scripts/west-commands.yml
+      import:
+        name-allowlist:
+          - cmsis_6
+          - fatfs
+
+  self:
+    path: zephyr_srsdk

@@ -1,0 +1,9 @@
+# Copyright (c) 2026 Synaptics Incorporated
+# SPDX-License-Identifier: Apache-2.0
+
+config DMA_ARM350
+	bool "ARM350 DMA driver"
+	default y
+	depends on DT_HAS_ARM_DMA_350_ENABLED
+	help
+	  Enable support for the ARM350 DMA controller.

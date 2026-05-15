@@ -1,0 +1,27 @@
+# Copyright (c) 2026 Synaptics Incorporated
+# SPDX-License-Identifier: Apache-2.0
+
+if VIDEO
+
+rsource "Kconfig.ov02c10"
+
+endif # VIDEO
+
+config VIDEO_SYNA_MIPI
+	bool "Synaptics MIPI video driver"
+	default y
+	depends on DT_HAS_SYNA_MIPI_VIDEO_ENABLED
+	help
+	  Enable the Synaptics MIPI video driver.
+
+config VIDEO_SYNA_MIPI_INIT_PRIORITY
+	int "MIPI init priority"
+	# Keep greater than the OV02C10 init priority to satisfy DT dependency validation.
+	# (SYS_INIT priorities are compared numerically within POST_KERNEL.)
+	default 90 if VIDEO_OV02C10
+	default VIDEO_INIT_PRIORITY
+	depends on VIDEO_SYNA_MIPI
+	help
+	  Init priority for the Synaptics MIPI video driver. If OV02C10 is used
+	  on the platform, keep this greater than VIDEO_OV02C10_INIT_PRIORITY
+	  so any sensor power/control dependencies are initialized first.

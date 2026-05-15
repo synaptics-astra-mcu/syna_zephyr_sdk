@@ -1,0 +1,32 @@
+
+/*
+ * SR100 RDK overlay for the MIPI capture sample (FHD capture profile).
+ *
+ * Reserves a non-cached SRAM region for camera capture
+ */
+
+#include <zephyr/dt-bindings/memory-attr/memory-attr-arm.h>
+
+/ {
+	reserved-memory {
+		#address-cells = <1>;
+		#size-cells = <1>;
+		ranges;
+
+		mipi_shm: memory@33f6f000 {
+			compatible = "zephyr,memory-region", "mmio-sram";
+			reg = <0x33f6f000 0x200000>;
+			zephyr,memory-region = "MIPI_SHM";
+			zephyr,memory-attr = <DT_MEM_ARM_MPU_RAM_NOCACHE>;
+		};
+	};
+};
+
+&video_syna0 {
+	memory-region = <&mipi_shm>;
+};
+
+&sram0 {
+	reg = <0x33ea0000 0x000cf000>;
+	ranges = <0x0 0x33ea0000 0x000cf000>;
+};

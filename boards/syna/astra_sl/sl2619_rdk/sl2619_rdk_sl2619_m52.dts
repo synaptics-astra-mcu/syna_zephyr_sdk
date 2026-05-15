@@ -1,0 +1,130 @@
+/*
+ * Copyright (c) 2026 Synaptics Incorporated
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
+/dts-v1/;
+#include <syna/astra_sl/sl261x/sl261x_m52.dtsi>
+#include <syna/astra_sl/sl261x/sl261x_pinctrl.dtsi>
+#include <zephyr/dt-bindings/gpio/gpio.h>
+
+/ {
+	model = "Synaptics SL2610 RDK M52 Core";
+	compatible = "syna,sl261x-rdk";
+
+	chosen {
+		zephyr,console = &ns16550_uart0;
+		zephyr,shell-uart = &ns16550_uart0;
+		zephyr,sram = &dtcm;
+		zephyr,flash = &itcm;
+		zephyr,code-partition = &itcm;
+		zephyr,arch-cpu = &cpu_m52;
+		zephyr,flash-controller = &xspi;
+	};
+
+	aliases {
+		i2c-0 = &i2c0;
+	};
+};
+
+&xspi {
+	status = "okay";
+	pinctrl-0 = <&sm_xspi_data0 &sm_xspi_data1 &sm_xspi_data2 &sm_xspi_data3 &sm_xspi_dqs
+		     &sm_xspi_clk &sm_xspi_clk_n &sm_xspi_cs0>;
+	pinctrl-names = "default";
+	use-direct-mode;
+
+	flash1: mt25qu02g@0 {
+		compatible = "micron,mt25qu02g";
+		reg = <0>;
+		size = <DT_SIZE_M(256*8)>; /* in bits */
+		status = "okay";
+	};
+};
+
+&sm_xspi_data0 {
+	drive-strength = <3>;
+};
+
+&sm_xspi_data1 {
+	drive-strength = <3>;
+};
+
+&sm_xspi_data2 {
+	drive-strength = <3>;
+};
+
+&sm_xspi_data3 {
+	drive-strength = <3>;
+};
+
+&sm_xspi_dqs {
+	drive-strength = <3>;
+};
+
+&sm_xspi_clk {
+	drive-strength = <3>;
+};
+
+&sm_xspi_clk_n {
+	drive-strength = <3>;
+};
+
+&sm_xspi_cs0 {
+	drive-strength = <3>;
+};
+
+&i2c0 {
+	status = "okay";
+	clock-frequency = <I2C_BITRATE_STANDARD>;
+	pinctrl-0 = <&sm_tw0_sda &sm_tw0_scl>;
+	pinctrl-names = "default";
+
+	ina3221@42 {
+		compatible = "ti,ina3221";
+		reg = <0x42>;
+		shunt-resistors = <10000 10000 10000>;
+	};
+};
+
+&sm_tw0_sda {
+	bias-pull-up;
+	drive-strength = <8>;
+};
+
+&sm_tw0_scl {
+	bias-pull-up;
+	drive-strength = <8>;
+};
+
+&ns16550_uart0 {
+	pinctrl-0 = <&sm_urt0_rxd &sm_urt0_txd>;
+	pinctrl-names = "default";
+	clock-frequency = <25000000>;
+	current-speed = <115200>;
+	dlf = <0>;
+	status = "okay";
+};
+
+&gpio0 {
+	status = "okay";
+};
+
+&gpio1 {
+	status = "okay";
+};
+
+&gpio2 {
+	status = "okay";
+};
+
+&gpio3 {
+	status = "okay";
+};
+
+&spim {
+	status = "okay";
+	pinctrl-0 = <&sm_spi1_clk &sm_spi1_sdi &sm_spi1_sdo &sm_spi1_ss3n>;
+	pinctrl-names = "default";
+};

@@ -1,0 +1,204 @@
+/*
+ * Copyright (c) 2025 Synaptics Incorporated
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
+/dts-v1/;
+
+#include <mem.h>
+#include <freq.h>
+#include <arm/armv7-m.dtsi>
+#include <zephyr/dt-bindings/gpio/gpio.h>
+#include <zephyr/dt-bindings/i2c/i2c.h>
+#include <zephyr/dt-bindings/clock/syna_sr100_clock.h>
+#include <zephyr/dt-bindings/reset/syna_sr100_reset.h>
+#include <zephyr/dt-bindings/memory-attr/memory-attr-arm.h>
+
+/ {
+	cpus {
+		#address-cells = <1>;
+		#size-cells = <0>;
+
+		cpu0: cpu@0 {
+			compatible = "arm,cortex-m4";
+			device_type = "cpu";
+			reg = <0>;
+			clock-frequency = <100000000>;
+		};
+	};
+
+	lp_mem_a: memory@0 {
+		compatible = "mmio-sram";
+		reg = <0x00000000 DT_SIZE_K(1024)>;
+		#address-cells = <1>;
+		#size-cells = <1>;
+		ranges = <0x0 0x00000000 DT_SIZE_K(1024)>;
+	};
+
+	lp_mem_b: memory@100000 {
+		compatible = "mmio-sram";
+		reg = <0x00100000 DT_SIZE_K(448)>;
+		#address-cells = <1>;
+		#size-cells = <1>;
+		ranges = <0x0 0x00100000 DT_SIZE_K(448)>;
+	};
+
+	lp_cache: cache@b5002000 {
+		compatible = "arm,ahb-cache";
+		reg = <0xb5002000 0x1000>;
+		status = "disabled";
+	};
+
+	xspi_stig: memory@3c000000 {
+		compatible = "zephyr,memory-region";
+		reg = <0x3c000000 DT_SIZE_K(4)>;
+		zephyr,memory-region = "XSPI_STIG";
+		zephyr,memory-attr = <DT_MEM_ARM_MPU_RAM_NOCACHE>;
+	};
+
+	soc {
+		gcr: clock-controller@50330700 { /* GLOBAL */
+			reg = <0x50330700 0x100>;
+			compatible = "syna,sr100-clock";
+			perif-rate = <400000000>;
+			#clock-cells = <1>;
+			status = "okay";
+		};
+
+		reset: reset-controller@50330600 { /* GLOBAL */
+			reg = <0x50330600 0x100>;
+			compatible = "syna,sr100-reset";
+			#reset-cells = <1>;
+			status = "okay";
+		};
+
+		ns16550_lp_uart: uart@b5000000 {
+			compatible = "ns16550";
+			reg = <0xb5000000 0x1000>;
+			current-speed = <115200>;
+			clock-frequency = <DT_FREQ_M(100)>;
+			interrupts = <15 0>;
+			reg-shift = <2>;
+			status = "disabled";
+		};
+
+		i2c0: i2c@50312000 {
+			#address-cells = <1>;
+			#size-cells = <0>;
+			compatible = "snps,designware-i2c";
+			clocks = <&gcr SYNA_I2C0_MSTR_CLK>;
+			clock-frequency = <I2C_BITRATE_STANDARD>;
+			resets = <&reset SYNA_I2C0M_RST>;
+			reg = <0x50312000 0x1000>;
+			interrupts = <17 0>;
+			status = "disabled";
+		};
+
+		i2c1: i2c@50313000 {
+			#address-cells = <1>;
+			#size-cells = <0>;
+			compatible = "snps,designware-i2c";
+			clocks = <&gcr SYNA_I2C1_MSTR_CLK>;
+			clock-frequency = <I2C_BITRATE_STANDARD>;
+			resets = <&reset SYNA_I2C1M_RST>;
+			reg = <0x50313000 0x1000>;
+			interrupts = <18 0>;
+			status = "disabled";
+		};
+
+		i2c2: i2c@50314000 { /* I2C slave */
+			#address-cells = <1>;
+			#size-cells = <0>;
+			compatible = "snps,designware-i2c";
+			clocks = <&gcr SYNA_I2C_SLV_CLK>;
+			clock-frequency = <I2C_BITRATE_STANDARD>;
+			resets = <&reset SYNA_I2CS_RST>;
+			reg = <0x50314000 0x1000>;
+			interrupts = <12 0>;
+			status = "disabled";
+		};
+
+		lp_gpio: gpio@b5001000 {
+			#address-cells = <1>;
+			#size-cells = <0>;
+			compatible = "snps,designware-gpio";
+			reg = <0xb5001000 0x80>;
+			interrupts = <13 2>;
+			ngpios = <4>;
+			gpio-controller;
+			#gpio-cells = <2>;
+			status = "disabled";
+		};
+
+		spi0: spi@50315000 {
+			#address-cells = <1>;
+			#size-cells = <0>;
+			compatible = "snps,designware-spi";
+			clocks = <&gcr SYNA_SPI_MSTR_CLK>;
+			reg = <0x50315000 0x88>;
+			interrupts = <20 3>;
+			fifo-depth = <8>;
+			max-xfer-size = <32>;
+			clock-frequency = <DT_FREQ_M(100)>;
+			status = "disabled";
+		};
+
+		lp_wdt: watchdog@b5003000 {
+			compatible = "arm,apb-wdt";
+			reg = <0xb5003000 0x1000>,
+			      <0x50350038 0x4>;
+			reg-names = "wdt_ctrl", "aon_por_rst";
+			clock-frequency = <DT_FREQ_M(24)>;
+			status = "disabled";
+		};
+
+		xspi: flash-controller@5031b000 {
+			#address-cells = <0x1>;
+			#size-cells = <0x0>;
+			compatible = "cdns,xspi";
+			reg = <0x5031b000 0x2000>,
+			      <0x3c000000 0x4000000>;
+			reg-names = "xspi_reg", "xspi_xip";
+			interrupts = <16 0>;
+			clocks = <&gcr SYNA_XSPI_CLK>;
+			assigned-clock-rates = <DT_FREQ_M(133)>;
+			resets = <&reset SYNA_XSPI_RST>;
+			erase-block-size = <4096>;
+			write-block-size = <1>;
+			status = "disabled";
+		};
+
+		dma0: dma@50322000 {
+			compatible = "arm,dma-350";
+			reg = <0x50322000 0x1000>;
+			interrupts = <8 0>, <9 0>, <21 0>, <22 0>,
+				     <19 0>, <34 0>, <66 0>, <33 0>;
+			clocks = <&gcr SYNA_DMA0_CLK>;
+			resets = <&reset SYNA_DMA0_RST>;
+			dma-channels = <8>;
+			status = "disabled";
+			#dma-cells = <1>;
+		};
+
+		dma1: dma@50324000 {
+			compatible = "arm,dma-350";
+			reg = <0x50324000 0x1000>;
+			interrupts = <10 0>, <11 0>, <23 0>, <24 0>,
+				     <25 0>, <26 0>, <27 0>, <28 0>;
+			clocks = <&gcr SYNA_DMA1_CLK>;
+			resets = <&reset SYNA_DMA1_RST>;
+			dma-channels = <8>;
+			status = "disabled";
+			#dma-cells = <1>;
+		};
+	};
+};
+
+&nvic {
+	arm,num-irq-priority-bits = <4>;
+};
+
+&systick {
+	status = "okay";
+};
