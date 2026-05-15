@@ -9,6 +9,8 @@ manifest:
         name-allowlist:
           - cmsis_6
           - fatfs
+          - littlefs
 
   self:
     path: zephyr_srsdk
+    west-commands: scripts/west-commands.yml

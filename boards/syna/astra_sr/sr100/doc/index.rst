@@ -159,6 +159,13 @@ For the image generation scripts, clone the following repository:
 These tools require the python package ``pycryptodome`` and the executable
 ``arm-none-eabi-objcopy`` from the ARM GNU toolchain in your PATH.
 
+**Apply patches**
+
+.. code-block:: console
+
+   cd ~/syna_zephyr
+   west syna-patch apply
+
 Building
 ========
 
