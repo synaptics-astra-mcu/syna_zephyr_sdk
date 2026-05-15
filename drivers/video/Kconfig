@@ -20,8 +20,8 @@ config VIDEO_SYNA_MIPI_INIT_PRIORITY
 	# (SYS_INIT priorities are compared numerically within POST_KERNEL.)
 	default 90 if VIDEO_OV02C10
 	default VIDEO_INIT_PRIORITY
-	depends on VIDEO_SYNA_MIPI
+	depends on VIDEO && VIDEO_SYNA_MIPI
 	help
-	  Init priority for the Synaptics MIPI video driver. If OV02C10 is used
+	  Init priority for the Synaptics MIPI video driver. If OV02C10(sensor) is used
 	  on the platform, keep this greater than VIDEO_OV02C10_INIT_PRIORITY
 	  so any sensor power/control dependencies are initialized first.
