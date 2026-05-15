@@ -26,12 +26,12 @@ properties:
     type: int
     description: |
       Optional Synaptics SoC register address used to enable the external
-      sensor clock. On SR110, this controls CLKOUT0.
+      sensor clock.
 
   mclk-control-val:
     type: int
     description: |
-      Value written to syna,mclk-control-reg.
+      Value written to mclk-control-reg.
 
   power-up-delay-ms:
     type: int
@@ -44,6 +44,12 @@ properties:
     default: 10
     description: |
       Delay after the sensor MCLK register is programmed.
+
+  data-lanes:
+    type: int
+    required: false
+    description: |
+      Number of CSI-2 data lanes used by the sensor.
 
 child-binding:
   child-binding:

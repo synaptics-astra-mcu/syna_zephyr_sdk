@@ -101,6 +101,23 @@ struct ov02c10_data {
 	bool streaming;
 };
 
+int ov02c10_get_pixel_rate(const struct device *dev, uint64_t *pixel_rate)
+{
+	struct ov02c10_data *drv_data;
+
+	if ((dev == NULL) || (pixel_rate == NULL)) {
+		return -EINVAL;
+	}
+
+	drv_data = dev->data;
+	if ((drv_data == NULL) || (drv_data->cur_mode == NULL)) {
+		return -ENODEV;
+	}
+
+	*pixel_rate = drv_data->cur_mode->pixel_rate;
+	return 0;
+}
+
 static int ov02c10_apply_board_config(const struct device *dev)
 {
 	const struct ov02c10_config *cfg = dev->config;
@@ -176,7 +193,7 @@ static int ov02c10_apply_board_config(const struct device *dev)
 }
 
 /*
- * OV02C10 480x270 RAW8 (SBGGR8), ~3fps, 1lane, MIPI CSI-2.
+ * OV02C10 480x270 RAW8 (SRGGB8), ~3fps, 1lane, MIPI CSI-2.
  *
  * Register value table for the OV2C10 to operate in 480x270 resolution,
  * 3fps, RAW8 format.
@@ -700,7 +717,7 @@ static const struct video_reg16 ov02c10_mode_480x270_regs[] = {
 };
 
 /*
- * OV02C10 640x480 RAW8 (SBGGR8), ~3fps, 1lane, MIPI CSI-2.
+ * OV02C10 640x480 RAW8 (SRGGB8), ~3fps, 1lane, MIPI CSI-2.
  *
  * Register table for OV2C10 640x480 operation: 3fps, RAW8.
  */
@@ -1218,7 +1235,7 @@ static const struct video_reg16 ov02c10_mode_640x480_regs[] = {
 };
 
 /*
- * OV02C10 1920x1080 RAW10 (SBGGR10), ~60fps, 1lane, MIPI CSI-2.
+ * OV02C10 1920x1080 RAW10 (SRGGB10), ~60fps, 1lane, MIPI CSI-2.
  *
  * Register table for OV2C10 1920x1080 operation: 60fps, RAW10.
  */
@@ -1449,7 +1466,7 @@ static const struct video_reg16 ov02c10_mode_1920x1080_regs[] = {
 };
 
 /*
- * OV02C10 480x270 RAW10 packed (SBGGR10P), ~60fps, 1lane, MIPI CSI-2.
+ * OV02C10 480x270 RAW10 packed (SRGGB10P), ~60fps, 1lane, MIPI CSI-2.
  *
  * Register table for OV2C10 480x270 operation: 60fps, RAW10 packed.
  */
@@ -1680,7 +1697,7 @@ static const struct video_reg16 ov02c10_mode_480x270_raw10_regs[] = {
 };
 
 /*
- * OV02C10 640x480 RAW10 packed (SBGGR10P), ~60fps, 1lane, MIPI CSI-2.
+ * OV02C10 640x480 RAW10 packed (SRGGB10P), ~60fps, 1lane, MIPI CSI-2.
  *
  * Register table for OV2C10 640x480 operation: 60fps, RAW10 packed.
  */
@@ -1922,7 +1939,7 @@ static const struct ov02c10_mode_config ov02c10_modes[] = {
 		.width = 480,
 		.height = 270,
 		.bits_per_pixel = 8,
-		.pixelformat = VIDEO_PIX_FMT_SBGGR8,
+		.pixelformat = VIDEO_PIX_FMT_SRGGB8,
 		.regs = ov02c10_mode_480x270_regs,
 		.num_regs = ARRAY_SIZE(ov02c10_mode_480x270_regs),
 		.fps = 3,
@@ -1933,7 +1950,7 @@ static const struct ov02c10_mode_config ov02c10_modes[] = {
 		.width = 640,
 		.height = 480,
 		.bits_per_pixel = 8,
-		.pixelformat = VIDEO_PIX_FMT_SBGGR8,
+		.pixelformat = VIDEO_PIX_FMT_SRGGB8,
 		.regs = ov02c10_mode_640x480_regs,
 		.num_regs = ARRAY_SIZE(ov02c10_mode_640x480_regs),
 		.fps = 3,
@@ -1944,7 +1961,7 @@ static const struct ov02c10_mode_config ov02c10_modes[] = {
 		.width = 1920,
 		.height = 1080,
 		.bits_per_pixel = 10,
-		.pixelformat = VIDEO_PIX_FMT_SBGGR10P,
+		.pixelformat = VIDEO_PIX_FMT_SRGGB10,
 		.regs = ov02c10_mode_1920x1080_regs,
 		.num_regs = ARRAY_SIZE(ov02c10_mode_1920x1080_regs),
 		.fps = 60,
@@ -1955,7 +1972,7 @@ static const struct ov02c10_mode_config ov02c10_modes[] = {
 		.width = 480,
 		.height = 270,
 		.bits_per_pixel = 10,
-		.pixelformat = VIDEO_PIX_FMT_SBGGR10P,
+		.pixelformat = VIDEO_PIX_FMT_SRGGB10,
 		.regs = ov02c10_mode_480x270_raw10_regs,
 		.num_regs = ARRAY_SIZE(ov02c10_mode_480x270_raw10_regs),
 		.fps = 60,
@@ -1966,7 +1983,7 @@ static const struct ov02c10_mode_config ov02c10_modes[] = {
 		.width = 640,
 		.height = 480,
 		.bits_per_pixel = 10,
-		.pixelformat = VIDEO_PIX_FMT_SBGGR10P,
+		.pixelformat = VIDEO_PIX_FMT_SRGGB10,
 		.regs = ov02c10_mode_640x480_raw10_regs,
 		.num_regs = ARRAY_SIZE(ov02c10_mode_640x480_raw10_regs),
 		.fps = 60,
@@ -1980,7 +1997,7 @@ _Static_assert(ARRAY_SIZE(ov02c10_modes) <= 0xFFU,
 /*
  * Advertised format capabilities returned by get_caps().
  * Must stay in sync with ov02c10_modes[].
- * 1920x1080 is RAW10 only; RAW8 (SBGGR8) is available at 480x270 and
+ * 1920x1080 is RAW10 only; RAW8 (SRGGB8) is available at 480x270 and
  * 640x480 only. set_fmt() validates requests against this table first.
  *
  * WARNING: Each entry in ov02c10_fmts must have a corresponding entry in
@@ -1989,11 +2006,11 @@ _Static_assert(ARRAY_SIZE(ov02c10_modes) <= 0xFFU,
  * When adding new modes, update both arrays to avoid drift.
  */
 static const struct video_format_cap ov02c10_fmts[] = {
-	OV02C10_VIDEO_FORMAT_CAP(480, 270, VIDEO_PIX_FMT_SBGGR8),
-	OV02C10_VIDEO_FORMAT_CAP(640, 480, VIDEO_PIX_FMT_SBGGR8),
-	OV02C10_VIDEO_FORMAT_CAP(1920, 1080, VIDEO_PIX_FMT_SBGGR10P),
-	OV02C10_VIDEO_FORMAT_CAP(480, 270, VIDEO_PIX_FMT_SBGGR10P),
-	OV02C10_VIDEO_FORMAT_CAP(640, 480, VIDEO_PIX_FMT_SBGGR10P),
+	OV02C10_VIDEO_FORMAT_CAP(480, 270, VIDEO_PIX_FMT_SRGGB8),
+	OV02C10_VIDEO_FORMAT_CAP(640, 480, VIDEO_PIX_FMT_SRGGB8),
+	OV02C10_VIDEO_FORMAT_CAP(1920, 1080, VIDEO_PIX_FMT_SRGGB10P),
+	OV02C10_VIDEO_FORMAT_CAP(480, 270, VIDEO_PIX_FMT_SRGGB10P),
+	OV02C10_VIDEO_FORMAT_CAP(640, 480, VIDEO_PIX_FMT_SRGGB10P),
 	{0},
 };
 
@@ -2468,7 +2485,7 @@ static int ov02c10_init(const struct device *dev)
 	}; \
 	DEVICE_DT_INST_DEFINE(n, &ov02c10_init, NULL, &ov02c10_data_##n, \
 		&ov02c10_cfg_##n, POST_KERNEL, \
-		OV02C10_INIT_PRIORITY, &ov02c10_driver_api); \
+		CONFIG_VIDEO_INIT_PRIORITY, &ov02c10_driver_api); \
 	VIDEO_DEVICE_DEFINE(ov02c10_##n, DEVICE_DT_INST_GET(n), NULL);
 
 DT_INST_FOREACH_STATUS_OKAY(OV02C10_INIT)

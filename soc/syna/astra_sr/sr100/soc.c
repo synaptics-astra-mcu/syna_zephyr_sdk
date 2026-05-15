@@ -34,12 +34,26 @@
 #define LP_CLK_ENABLE	0x00
 #define LP_STICKY_RST	0x14
 
+#define LPS_G1_CLKRST		0xB48A0000
+#define LPS_G1_CLK_ENABLE	0x00
+#define LPS_G1_CLK_ENABLE_MASK	0x7FFFFF
+
 #define AON_POR_RST_M4_WATCHDOG_BIT	(8)
 #define AON_POR_RST_M55_WATCHDOG_BIT	(9)
 
 #define SOC_BASE	0x50302000
 #define DMA0_TRIG_EN	0x54
 #define DMA1_TRIG_EN	0x84
+
+void soc_sr100_lp_jpeg_clocks_enable(void)
+{
+	sys_write32(LPS_G1_CLK_ENABLE_MASK, LPS_G1_CLKRST + LPS_G1_CLK_ENABLE);
+}
+
+void soc_sr100_lp_jpeg_clocks_disable(void)
+{
+	sys_write32(0U, LPS_G1_CLKRST + LPS_G1_CLK_ENABLE);
+}
 
 /**
  * @brief Perform basic hardware initialization at boot.

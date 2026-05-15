@@ -10,10 +10,3 @@ config VIDEO_OV02C10
 	depends on PINCTRL
 	help
 	  Enable the OV02C10 video sensor driver.
-
-config VIDEO_OV02C10_INIT_PRIORITY
-	int "OV02C10 init priority"
-	default 80
-	depends on VIDEO_OV02C10
-	help
-	  Keep this after any GPIO expander used for sensor power/control.

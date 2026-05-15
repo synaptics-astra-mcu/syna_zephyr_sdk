@@ -26,6 +26,10 @@
 	memory-region = <&mipi_shm>;
 };
 
+&ov02c10 {
+	data-lanes = <1>;
+};
+
 &sram0 {
 	reg = <0x33ea0000 0x000cf000>;
 	ranges = <0x0 0x33ea0000 0x000cf000>;

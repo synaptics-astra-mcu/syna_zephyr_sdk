@@ -151,6 +151,8 @@
 				remote-endpoint-label = "video_syna0_in";
 			};
 		};
+
+		data-lanes = <1>;
 	};
 
 	mc3479: mc3419@4c {

@@ -158,4 +158,4 @@ your host before running:
 
 .. code-block:: console
 
-   python3 samples/drivers/video/mipi_capture/tools/raw2png.py
+   python3 samples/drivers/video/tools/raw2png.py

@@ -1,0 +1,110 @@
+# Copyright (c) 2026 Synaptics, Inc.
+# SPDX-License-Identifier: Apache-2.0
+
+description: Synaptics LP JPEG video encoder
+
+compatible: "syna,enc-video"
+
+include:
+  - name: base.yaml
+
+properties:
+  interrupts:
+    required: true
+    description: |
+      LP JPEG interrupts exposed by the SoC NVIC.
+      Index 0 is frame processing done ("frame-done").
+      Index 1 is FMIN1 frame stored ("fmin1-stored").
+      Index 2 is an optional miscellaneous LP event interrupt ("misc").
+      The driver supports up to three IRQ lines.
+
+  interrupt-names:
+    required: true
+    description: |
+      Interrupt names in index order.
+      Use "frame-done", "fmin1-stored", and optional "misc".
+
+  mode:
+    type: int
+    default: 0
+    enum:
+      - 0
+      - 1
+    description: |
+      Wrapper mode selection.
+      0: Sensor/CSI -> LP JPEG in LP memory. The application must configure
+         the connected sensor format before starting the wrapper. The live
+         path currently supports RAW8 Bayer sensor input only. In this mode,
+         provide a child ``port/endpoint`` input with ``data-lanes`` set to
+         the CSI-2 lane count and a remote endpoint to the sensor.
+      1: Static/raw memory -> LP JPEG in LP memory. A child
+         ``port/endpoint`` is optional in this mode.
+
+  memory-region:
+    type: phandle
+    required: true
+    description: |
+      Required reserved memory region used as the LP JPEG raw/JPEG working
+      area. The referenced node must be writable, CPU-accessible to the
+      driver, and marked non-cacheable via ``zephyr,memory-attr``.
+
+  max-jpeg-size:
+    type: int
+    description: |
+      Maximum JPEG bytes to scan/copy from the LP JPEG output region.
+
+  frame-raw-offset:
+    type: int
+    default: 0
+    description: |
+      Byte offset from the ``memory-region`` base where the raw frame starts in
+      mode 0.
+
+  lp-src-offset:
+    type: int
+    description: |
+      Byte offset from the ``memory-region`` base used as the FMOUT source raw
+      frame buffer
+      when mode=1. The raw source frame must already be populated at this
+      location before the JPEG stream is started or retriggered.
+
+  lp-dst-offset:
+    type: int
+    description: |
+      Byte offset from the ``memory-region`` base used as the JPEG output
+      buffer when mode=1.
+      For best compatibility this offset should respect the driver's output
+      alignment requirement.
+
+  csi-id:
+    type: int
+    default: 0
+    description: LP sense CSI receiver instance id.
+
+  csi-timing:
+    type: int
+    default: 0
+    description: LP sense CSI timing selector.
+
+  csi-interface:
+    type: int
+    default: 1
+    description: LP sense CSI interface selector.
+
+  csi-virt-ch:
+    type: int
+    default: 0
+    description: CSI virtual channel.
+
+  csi-auto-flush:
+    type: int
+    default: 1
+    description: LP sense CSI auto flush enable.
+
+child-binding:
+  child-binding:
+    description: |
+      Video interface ``port/endpoint`` child nodes.
+      The endpoint ``data-lanes`` value is used as ``csi_lanes`` by the
+      driver in mode 0.
+    include: [video-interfaces.yaml]
