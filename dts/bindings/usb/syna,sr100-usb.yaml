@@ -3,6 +3,6 @@
 #
 description: Synaptics SR11X DWC2 compatible controller
 
-compatible: "syna,usb"
+compatible: "syna,sr100-usb"
 
-include: ["snps,dwc2.yaml", pinctrl-device.yaml]
+include: ["snps,dwc2.yaml", reset-device.yaml]
