@@ -10,7 +10,6 @@
 #include <zephyr/cache.h>
 #include <zephyr/device.h>
 #include <zephyr/devicetree.h>
-#include <zephyr/devicetree/port-endpoint.h>
 #include <zephyr/drivers/video.h>
 #include <zephyr/kernel.h>
 #include <zephyr/logging/log.h>
@@ -25,13 +24,9 @@ LOG_MODULE_REGISTER(video_sample_app, CONFIG_LOG_DEFAULT_LEVEL);
 #define VIDEO_SAMPLE_BUFFER_COUNT     ((uint32_t)CONFIG_VIDEO_SAMPLE_BUFFER_COUNT)
 #define VIDEO_SAMPLE_CAPTURE_TIMEOUT  K_MSEC(CONFIG_VIDEO_SAMPLE_CAPTURE_TIMEOUT_MS)
 #define VIDEO_SAMPLE_WARMUP_DELAY_MS  ((uint32_t)CONFIG_VIDEO_SAMPLE_WARMUP_DELAY_MS)
-#define VIDEO_SAMPLE_TRIGGER_RETRIES  ((uint32_t)CONFIG_VIDEO_SAMPLE_TRIGGER_RETRIES)
-#define VIDEO_SAMPLE_TRIGGER_RETRY_MS ((uint32_t)CONFIG_VIDEO_SAMPLE_TRIGGER_RETRY_MS)
 #define VIDEO_SAMPLE_CAPTURE_COUNT    ((uint32_t)CONFIG_VIDEO_SAMPLE_CAPTURE_COUNT)
 
-#define VIDEO_SAMPLE_PIXEL_FORMAT     VIDEO_PIX_FMT_SBGGR8
-
-#define VIDEO_SAMPLE_SENSOR_PIXEL_FORMAT VIDEO_PIX_FMT_SBGGR10P
+#define VIDEO_SAMPLE_PIXEL_FORMAT     VIDEO_PIX_FMT_SRGGB8
 
 #define VIDEO_SAMPLE_CAPTURE_PIXEL_FORMAT VIDEO_SAMPLE_PIXEL_FORMAT
 
@@ -40,12 +35,6 @@ LOG_MODULE_REGISTER(video_sample_app, CONFIG_LOG_DEFAULT_LEVEL);
 #if !DT_NODE_EXISTS(VIDEO_DEV_NODE)
 #error "Devicetree node 'video_syna0' is required for this sample"
 #endif
-
-#define VIDEO_SAMPLE_ENDPOINT DT_CHILD(DT_CHILD(VIDEO_DEV_NODE, port), endpoint)
-#define VIDEO_SAMPLE_SENSOR_NODE DT_NODE_REMOTE_DEVICE(VIDEO_SAMPLE_ENDPOINT)
-
-BUILD_ASSERT(DT_NODE_HAS_STATUS(VIDEO_SAMPLE_SENSOR_NODE, okay),
-		"Enable the sensor connected to video_syna0 before building this sample");
 
 #if DT_NODE_HAS_PROP(VIDEO_DEV_NODE, memory_region)
 #define VIDEO_SAMPLE_SHM_ADDR ((uintptr_t)DT_REG_ADDR(DT_PHANDLE(VIDEO_DEV_NODE, memory_region)))
@@ -58,7 +47,6 @@ BUILD_ASSERT(DT_NODE_HAS_STATUS(VIDEO_SAMPLE_SENSOR_NODE, okay),
 #define VIDEO_SAMPLE_SHM_SIZE ((size_t)0U)
 #endif
 
-static const struct device *sensor_dev = DEVICE_DT_GET(VIDEO_SAMPLE_SENSOR_NODE);
 static uint8_t *stored_frame;
 static size_t stored_frame_size;
 
@@ -69,8 +57,6 @@ static uint8_t stored_frame_buf[VIDEO_SAMPLE_FRAME_PITCH * VIDEO_SAMPLE_FRAME_HE
 extern char _image_ram_start[];
 extern char __kernel_ram_end[];
 
-static int sensor_stream_start(void);
-static int sensor_stop_control(void);
 static int store_captured_frame(const struct video_buffer *vbuf);
 static int configure_video_format(const struct device *video_dev, struct video_format *fmt);
 static void drain_returned_buffers(const struct device *video_dev, size_t expected_count);
@@ -80,56 +66,6 @@ static int enqueue_capture_buffers(const struct device *video_dev, const struct 
 				   struct video_buffer **buffers, size_t count,
 				   size_t *driver_owned_count);
 #endif
-
-static int sensor_stream_start(void)
-{
-	int ret;
-	struct video_format sensor_fmt = {
-		.type = VIDEO_BUF_TYPE_OUTPUT,
-		.pixelformat = VIDEO_SAMPLE_SENSOR_PIXEL_FORMAT,
-		.width = VIDEO_SAMPLE_FRAME_WIDTH,
-		.height = VIDEO_SAMPLE_FRAME_HEIGHT,
-	};
-
-	if (!device_is_ready(sensor_dev)) {
-		LOG_ERR("Sensor device %s is not ready", sensor_dev->name);
-		return -ENODEV;
-	}
-
-	ret = video_set_format(sensor_dev, &sensor_fmt);
-	if (ret != 0) {
-		LOG_ERR("Sensor video_set_format failed: %d", ret);
-		return ret;
-	}
-
-	ret = video_stream_start(sensor_dev, VIDEO_BUF_TYPE_OUTPUT);
-	if (ret != 0) {
-		LOG_ERR("Sensor video_stream_start failed: %d", ret);
-		return ret;
-	}
-
-	LOG_INF("Sensor %s stream enabled for capture", sensor_dev->name);
-	return 0;
-}
-
-static int sensor_stop_control(void)
-{
-	int ret;
-
-	if (!device_is_ready(sensor_dev)) {
-		LOG_ERR("Sensor device %s is not ready", sensor_dev->name);
-		return -ENODEV;
-	}
-
-	ret = video_stream_stop(sensor_dev, VIDEO_BUF_TYPE_OUTPUT);
-	if (ret != 0) {
-		LOG_ERR("video_stream_stop failed: %d", ret);
-		return ret;
-	}
-
-	LOG_INF("Sensor %s stream stopped", sensor_dev->name);
-	return 0;
-}
 
 static int store_captured_frame(const struct video_buffer *vbuf)
 {
@@ -260,7 +196,6 @@ int main(void)
 	int ret;
 	int final_ret = 0;
 	size_t driver_owned_buffer_count = 0U;
-	bool sensor_started = false;
 	bool video_started = false;
 	bool video_stopped = false;
 
@@ -281,7 +216,7 @@ int main(void)
 	if (ret < 0) {
 		LOG_ERR("video_get_caps failed: %d", ret);
 		final_ret = ret;
-		goto out_cleanup_sensor;
+		goto out_cleanup_buffers;
 	}
 
 	LOG_INF("Video caps: min_vbuf_count=%u align=%u", caps.min_vbuf_count,
@@ -292,13 +227,13 @@ int main(void)
 		LOG_ERR("Sample provides %u buffers but driver requires %u",
 			(uint32_t)ARRAY_SIZE(queued_buffers), caps.min_vbuf_count);
 		final_ret = -ENOMEM;
-		goto out_cleanup_sensor;
+		goto out_cleanup_buffers;
 	}
 
 	ret = configure_video_format(video_dev, &fmt);
 	if (ret < 0) {
 		final_ret = ret;
-		goto out_cleanup_sensor;
+		goto out_cleanup_buffers;
 	}
 
 #if IS_ENABLED(CONFIG_VIDEO_SAMPLE_RES_FHD)
@@ -313,14 +248,14 @@ int main(void)
 			VIDEO_SAMPLE_FRAME_WIDTH, VIDEO_SAMPLE_FRAME_HEIGHT,
 			(uint32_t)shm_addr, (uint32_t)shm_size, (uint32_t)frame_size);
 		final_ret = -ENOMEM;
-		goto out_cleanup_sensor;
+		goto out_cleanup_buffers;
 	}
 
 	if ((shm_addr % MAX(caps.buf_align, 1U)) != 0U) {
 		LOG_ERR("Capture buffer addr 0x%x is not aligned to %u",
 			(uint32_t)shm_addr, (uint32_t)MAX(caps.buf_align, 1U));
 		final_ret = -EINVAL;
-		goto out_cleanup_sensor;
+		goto out_cleanup_buffers;
 	}
 
 	shm_vbuf.type = VIDEO_BUF_TYPE_OUTPUT;
@@ -345,14 +280,6 @@ int main(void)
 	}
 #endif
 
-	ret = sensor_stream_start();
-	if (ret < 0) {
-		LOG_ERR("Sensor stream start failed: %d", ret);
-		final_ret = ret;
-		goto out_cleanup_buffers;
-	}
-	sensor_started = true;
-
 	ret = video_stream_start(video_dev, VIDEO_BUF_TYPE_OUTPUT);
 	if (ret < 0) {
 		LOG_ERR("video_stream_start failed: %d", ret);
@@ -364,31 +291,6 @@ int main(void)
 	k_msleep(VIDEO_SAMPLE_WARMUP_DELAY_MS);
 
 	for (uint32_t frame_idx = 0U; frame_idx < VIDEO_SAMPLE_CAPTURE_COUNT; frame_idx++) {
-		bool capture_kicked = false;
-
-		for (size_t attempt = 0; attempt < VIDEO_SAMPLE_TRIGGER_RETRIES; attempt++) {
-			ret = video_flush(video_dev, false);
-			if (ret == 0) {
-				capture_kicked = true;
-				break;
-			}
-
-			LOG_WRN("Frame %u kick attempt %u/%u failed: %d",
-				(uint32_t)(frame_idx + 1U),
-				(uint32_t)(attempt + 1U),
-				(uint32_t)VIDEO_SAMPLE_TRIGGER_RETRIES,
-				ret);
-			k_msleep(VIDEO_SAMPLE_TRIGGER_RETRY_MS);
-		}
-
-		if (!capture_kicked) {
-			LOG_ERR("Unable to trigger frame %u after %u attempts",
-				(uint32_t)(frame_idx + 1U),
-				(uint32_t)VIDEO_SAMPLE_TRIGGER_RETRIES);
-			final_ret = (ret < 0) ? ret : -EIO;
-			goto out_stop_video;
-		}
-
 		LOG_INF("Waiting for frame %u/%u...", (uint32_t)(frame_idx + 1U),
 			(uint32_t)VIDEO_SAMPLE_CAPTURE_COUNT);
 
@@ -474,18 +376,6 @@ out_cleanup_buffers:
 				queued_buffers[i] = NULL;
 			}
 		}
-	}
-
-out_cleanup_sensor:
-	if (sensor_started) {
-		ret = sensor_stop_control();
-		if (ret < 0) {
-			LOG_WRN("sensor_stop_control failed: %d", ret);
-			if (final_ret == 0) {
-				final_ret = ret;
-			}
-		}
-		sensor_started = false;
 	}
 
 	LOG_INF("Video sample finished");

@@ -105,27 +105,56 @@ Frame Dump (Optional)
 The sample logs the GDB dump commands needed to extract either the raw input
 frame (LP memory) or the encoded JPEG output buffer.
 
-Start OpenOCD in one terminal:
-
-.. code-block:: console
-
-   openocd -f <PATH>/syna_zephyr/srsdk_tools/Input_Config/sr100_m55.cfg
-
 1) Dump from memory
 ===================
 
-Use OpenOCD in one terminal and ``arm-none-eabi-gdb`` in another terminal, then
-in the GDB terminal:
+Use OpenOCD in one terminal and ``arm-none-eabi-gdb`` in another terminal.
+
+Terminal 1 (OpenOCD)
+--------------------
 
 .. code-block:: console
 
+   openocd -f boards/syna/astra_sr/sr100/support/openocd.cfg
+
+Terminal 2 (GDB)
+----------------
+
+.. code-block:: console
+
+   arm-none-eabi-gdb
    target extended-remote :3333
-   dump binary memory frame_dump.raw 0x33ea64c0 (0x33ea64c0 + 0x7E900)  # Mode 1 (M2M) (960x540 RAW8)
-   dump binary memory frame_dump.raw 0x33ea64c0 (0x33ea64c0 + 0x1FA40)  # Mode 0 (S2M) (480x270 RAW8)
+   dump binary memory frame_dump.raw 0xB4904000 (0xB4904000 + 0x7E900)  # Mode 1 (M2M) (960x540 RAW8)
+   dump binary memory frame_dump.raw 0xB4904000 (0xB4904000 + 0x1FA40)  # Mode 0 (S2M) (480x270 RAW8)
 
 For the JPEG output, use the address and size printed by the sample:
 
 .. code-block:: console
 
+   arm-none-eabi-gdb
    target extended-remote :3333
    dump binary memory out.jpg <APP_BUF_ADDR> (<APP_BUF_ADDR> + <BYTESUSED>)
+
+The captured JPEG is already a standard ``.jpg``; no JPEG-to-PNG conversion step
+is required.
+
+Memory dumps can take several minutes depending on the transport and size.
+
+2) View the RAW dump (ffplay)
+=============================
+
+The dumped ``frame_dump.raw`` is a RAW8 Bayer frame. From the directory where
+you saved the dump, preview it with ``ffplay`` (example uses RGGB and 50% scale):
+
+.. code-block:: console
+
+   # Mode 1 (M2M): 960x540 RAW8
+   ffplay -hide_banner -loglevel error -f rawvideo -pixel_format bayer_rggb8 -video_size 960x540 \
+     -vf scale=iw*0.5:ih*0.5 frame_dump.raw
+
+   # Mode 0 (S2M): 480x270 RAW8
+   ffplay -hide_banner -loglevel error -f rawvideo -pixel_format bayer_rggb8 -video_size 480x270 \
+     -vf scale=iw*0.5:ih*0.5 frame_dump.raw
+
+If colors look wrong, try other Bayer patterns (``bayer_bggr8``, ``bayer_grbg8``,
+``bayer_gbrg8``) to match your sensor.

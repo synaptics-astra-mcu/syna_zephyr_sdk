@@ -27,15 +27,22 @@
 
 LOG_MODULE_REGISTER(video_syna_sr100_mipi, CONFIG_VIDEO_LOG_LEVEL);
 
-#define VIDEO_SYNA_DEFAULT_WIDTH      480U
-#define VIDEO_SYNA_DEFAULT_HEIGHT     270U
-#define VIDEO_SYNA_DEFAULT_MIN_VBUFS  2U
+#define VIDEO_SYNA_DEFAULT_WIDTH  480U
+#define VIDEO_SYNA_DEFAULT_HEIGHT 270U
+/*
+ * Single-buffer operation is supported; additional buffers improve throughput.
+ */
+#if IS_ENABLED(CONFIG_VIDEO_SAMPLE_RES_FHD)
+#define VIDEO_SYNA_DEFAULT_MIN_VBUFS 1U
+#else
+#define VIDEO_SYNA_DEFAULT_MIN_VBUFS 2U
+#endif
 #define VIDEO_SYNA_DEFAULT_ALIGNMENT  64U
 #define VIDEO_SYNA_MAX_DATA_LANES     4U
 /* Typical Bayer sensor output for this pipeline (sensor -> MIPI input). */
-#define VIDEO_SYNA_PIXEL_FORMAT_RAW10 VIDEO_PIX_FMT_SBGGR10P
+#define VIDEO_SYNA_PIXEL_FORMAT_RAW10 VIDEO_PIX_FMT_SRGGB10P
 /* Application-visible capture output (MIPI writes RAW8 into SHM). */
-#define VIDEO_SYNA_PIXEL_FORMAT_RAW8  VIDEO_PIX_FMT_SBGGR8
+#define VIDEO_SYNA_PIXEL_FORMAT_RAW8  VIDEO_PIX_FMT_SRGGB8
 
 #if IS_ENABLED(CONFIG_VIDEO_SAMPLE_RES_FHD)
 /* FHD sample uses a DT-reserved DMA-only pool; avoid reserving extra SRAM. */
@@ -123,6 +130,8 @@ struct video_syna_sr100_mipi_data {
 	atomic_t streaming;
 	atomic_t capture_inflight;
 	bool lib_initialized;
+	bool starting;
+	bool stopping;
 };
 
 K_MUTEX_DEFINE(video_syna_sr100_mipi_init_lock);
@@ -175,22 +184,29 @@ static uint8_t video_syna_sr100_mipi_pixfmt_to_bpp(uint32_t pixelformat)
 }
 
 static int video_syna_sr100_mipi_clocks_apply(const struct device *clk_dev,
-					      clock_control_subsys_t clk_subsys,
-					      bool enable)
+						      clock_control_subsys_t clk_subsys,
+						      bool enable)
 {
 	int ret;
+	atomic_val_t old;
 
 	if ((clk_dev == NULL) || !device_is_ready(clk_dev)) {
 		return enable ? -ENODEV : 0;
 	}
 
 	if (!enable) {
-		/* Ignore extra "off" calls when no active users remain. */
-		if (atomic_get(&video_syna_sr100_mipi_clk_users) <= 0) {
-			return 0;
+		for (;;) {
+			old = atomic_get(&video_syna_sr100_mipi_clk_users);
+			if (old <= 0) {
+				return 0;
+			}
+
+			if (atomic_cas(&video_syna_sr100_mipi_clk_users, old, old - 1)) {
+				break;
+			}
 		}
 
-		if (atomic_dec(&video_syna_sr100_mipi_clk_users) != 1) {
+		if (old != 1) {
 			return 0;
 		}
 
@@ -199,17 +215,8 @@ static int video_syna_sr100_mipi_clocks_apply(const struct device *clk_dev,
 		return 0;
 	}
 
-	/*
-	 * Fast path: clocks are already enabled by another user.
-	 * Keep an extra refcount and return.
-	 */
-	if (atomic_get(&video_syna_sr100_mipi_clk_users) > 0) {
-		(void)atomic_inc(&video_syna_sr100_mipi_clk_users);
-		return 0;
-	}
-
-	/* Refcount to tolerate multiple init/start paths calling enable. */
-	if (atomic_inc(&video_syna_sr100_mipi_clk_users) > 0) {
+	old = atomic_inc(&video_syna_sr100_mipi_clk_users);
+	if (old > 0) {
 		return 0;
 	}
 
@@ -343,7 +350,7 @@ static int video_syna_sr100_mipi_shm_prepare(const struct device *dev)
 
 	if ((uintptr_t)cfg->shm_pool_addr != data->shm_pool_addr) {
 		LOG_INF("Using internal SHM pool: addr=%p size=%zu",
-			(void *)data->shm_pool_addr, (uint32_t)data->shm_pool_size);
+			(void *)data->shm_pool_addr, data->shm_pool_size);
 	} else {
 		LOG_INF("Using DT SHM pool: addr=%p size=%zu",
 			(void *)data->shm_pool_addr, data->shm_pool_size);
@@ -457,48 +464,25 @@ static int video_syna_sr100_mipi_start(const struct device *dev)
 	};
 	ret = video_get_format(data->sensor_dev, &active_sensor_fmt);
 	if (ret != 0) {
-		/*
-		 * If the sensor cannot report its current mode, fall back to
-		 * programming it explicitly.
-		 */
-		active_sensor_fmt = (struct video_format){
-			.type = VIDEO_BUF_TYPE_OUTPUT,
-		};
+		LOG_ERR("Sensor video_get_format() failed: %d", ret);
+		(void)video_syna_sr100_mipi_clocks_apply(cfg->clk_dev, cfg->clk_subsys, false);
+		return ret;
 	}
 
-	bpp = (ret == 0) ? video_syna_sr100_mipi_pixfmt_to_bpp(active_sensor_fmt.pixelformat) : 0U;
+	if ((active_sensor_fmt.width != sensor_fmt.width) || (active_sensor_fmt.height != sensor_fmt.height)) {
+		LOG_ERR("Sensor format mismatch: sensor=%ux%u expected=%ux%u",
+			active_sensor_fmt.width, active_sensor_fmt.height,
+			sensor_fmt.width, sensor_fmt.height);
+		(void)video_syna_sr100_mipi_clocks_apply(cfg->clk_dev, cfg->clk_subsys, false);
+		return -EINVAL;
+	}
 
-	if ((ret != 0) || (active_sensor_fmt.width != sensor_fmt.width) ||
-	    (active_sensor_fmt.height != sensor_fmt.height) || (bpp == 0U)) {
-		ret = video_set_format(data->sensor_dev, &sensor_fmt);
-		if (ret != 0) {
-			LOG_ERR("Sensor video_set_format(%ux%u pix=0x%x) failed: %d",
-				sensor_fmt.width, sensor_fmt.height,
-				sensor_fmt.pixelformat, ret);
-			(void)video_syna_sr100_mipi_clocks_apply(cfg->clk_dev,
-								cfg->clk_subsys, false);
-			return ret;
-		}
-
-		active_sensor_fmt = (struct video_format){
-			.type = VIDEO_BUF_TYPE_OUTPUT,
-		};
-		ret = video_get_format(data->sensor_dev, &active_sensor_fmt);
-		if (ret != 0) {
-			LOG_ERR("Sensor video_get_format() failed: %d", ret);
-			(void)video_syna_sr100_mipi_clocks_apply(cfg->clk_dev,
-								cfg->clk_subsys, false);
-			return ret;
-		}
-
-		bpp = video_syna_sr100_mipi_pixfmt_to_bpp(active_sensor_fmt.pixelformat);
-		if (bpp == 0U) {
-			LOG_ERR("Sensor output pixelformat 0x%x is unsupported",
-				active_sensor_fmt.pixelformat);
-			(void)video_syna_sr100_mipi_clocks_apply(cfg->clk_dev,
-								cfg->clk_subsys, false);
-			return -ENOTSUP;
-		}
+	bpp = video_syna_sr100_mipi_pixfmt_to_bpp(active_sensor_fmt.pixelformat);
+	if (bpp == 0U) {
+		LOG_ERR("Sensor output pixelformat 0x%x is unsupported",
+			active_sensor_fmt.pixelformat);
+		(void)video_syna_sr100_mipi_clocks_apply(cfg->clk_dev, cfg->clk_subsys, false);
+		return -ENOTSUP;
 	}
 
 	ctrl = (struct video_control){
@@ -575,6 +559,11 @@ static int video_syna_sr100_mipi_start(const struct device *dev)
 	atomic_set(&data->streaming, 1);
 	atomic_clear(&data->capture_inflight);
 
+	/* Start capturing immediately if buffers are already queued. */
+	if (k_fifo_peek_head(&data->fifo_in) != NULL) {
+		(void)k_work_submit(&data->kick_work);
+	}
+
 	LOG_INF("Stream started (%ux%u size=%u)",
 		data->fmt.width, data->fmt.height, (uint32_t)data->frame_size);
 	return 0;
@@ -585,10 +574,18 @@ static void video_syna_sr100_mipi_stop(const struct device *dev)
 	const struct video_syna_sr100_mipi_config *cfg = dev->config;
 	struct video_syna_sr100_mipi_data *data = dev->data;
 	struct video_buffer *vbuf;
-	bool was_streaming = (atomic_get(&data->streaming) != 0);
+	bool was_streaming;
 	struct k_work_sync complete_sync;
 	struct k_work_sync kick_sync;
 
+	k_mutex_lock(&data->lock, K_FOREVER);
+	if (data->stopping) {
+		k_mutex_unlock(&data->lock);
+		return;
+	}
+
+	data->stopping = true;
+	was_streaming = (atomic_get(&data->streaming) != 0);
 	/* Stop capture and release the active datapath. */
 	if (cfg->has_irq) {
 		irq_disable(cfg->irqn);
@@ -597,6 +594,7 @@ static void video_syna_sr100_mipi_stop(const struct device *dev)
 	/* Prevent callbacks/work from completing buffers after stop. */
 	atomic_clear(&data->streaming);
 	atomic_clear(&data->capture_inflight);
+	k_mutex_unlock(&data->lock);
 
 	if (data->sensor_dev != NULL) {
 		(void)video_stream_stop(data->sensor_dev, VIDEO_BUF_TYPE_OUTPUT);
@@ -616,6 +614,7 @@ static void video_syna_sr100_mipi_stop(const struct device *dev)
 	(void)k_work_cancel_sync(&data->complete_work, &complete_sync);
 	(void)k_work_cancel_sync(&data->kick_work, &kick_sync);
 
+	k_mutex_lock(&data->lock, K_FOREVER);
 	while ((vbuf = k_fifo_get(&data->fifo_complete, K_NO_WAIT)) != NULL) {
 		vbuf->bytesused = 0U;
 		k_fifo_put(&data->fifo_out, vbuf);
@@ -627,6 +626,8 @@ static void video_syna_sr100_mipi_stop(const struct device *dev)
 		k_fifo_put(&data->fifo_out, vbuf);
 		VIDEO_SYNA_RAISE_SIGNAL(data, VIDEO_BUF_ABORTED);
 	}
+	data->stopping = false;
+	k_mutex_unlock(&data->lock);
 
 	if (was_streaming) {
 		(void)video_syna_sr100_mipi_clocks_apply(cfg->clk_dev, cfg->clk_subsys, false);
@@ -877,10 +878,10 @@ static int video_syna_sr100_mipi_enqueue(const struct device *dev, struct video_
 		 * - Before streaming: allow the DT pool address only when we can
 		 *   predict the DT pool will be selected for the current frame size.
 		 */
-		if (atomic_get(&data->streaming) != 0) {
-			if ((uintptr_t)vbuf->buffer != data->shm_pool_addr) {
-				return -EINVAL;
-			}
+			if (atomic_get(&data->streaming) != 0) {
+				if ((uintptr_t)vbuf->buffer != data->shm_pool_addr) {
+					return -EINVAL;
+				}
 			} else {
 				bool dt_pool_present = (cfg->shm_pool_addr != 0U) && (cfg->shm_pool_size != 0U);
 
@@ -892,7 +893,7 @@ static int video_syna_sr100_mipi_enqueue(const struct device *dev, struct video_
 					return -EINVAL;
 				}
 
-	#if VIDEO_SYNA_INTERNAL_SHM_POOL_SIZE > 0
+#if VIDEO_SYNA_INTERNAL_SHM_POOL_SIZE > 0
 				bool dt_pool_cpu_accessible =
 					dt_pool_present && (cfg->shm_pool_addr >= ram_start) &&
 					(cfg->shm_pool_addr < ram_end) &&
@@ -902,9 +903,9 @@ static int video_syna_sr100_mipi_enqueue(const struct device *dev, struct video_
 				    (frame_size <= VIDEO_SYNA_INTERNAL_SHM_POOL_SIZE_BYTES)) {
 					return -EINVAL;
 				}
-	#endif
+#endif
 			}
-	}
+		}
 
 	k_mutex_lock(&data->lock, K_FOREVER);
 	k_fifo_put(&data->fifo_in, vbuf);
@@ -1179,22 +1180,61 @@ static int video_syna_sr100_mipi_get_caps(const struct device *dev, struct video
 static int video_syna_sr100_mipi_flush(const struct device *dev, bool abort)
 {
 	struct video_syna_sr100_mipi_data *data = dev->data;
-	int ret = 0;
+	struct video_buffer *vbuf;
+	int64_t deadline_ms;
 
-	k_mutex_lock(&data->lock, K_FOREVER);
-
-	if (!abort) {
-		/* Non-cancel flush is used as a "kick" to start capture. */
-		ret = video_syna_sr100_mipi_kick(dev);
-		k_mutex_unlock(&data->lock);
-		return ret;
+	if (abort) {
+		/* flush(abort=true) stops streaming and aborts queued buffers. */
+		video_syna_sr100_mipi_stop(dev);
+		return 0;
 	}
 
-	/* flush(abort=true) stops streaming and aborts queued buffers. */
-	k_mutex_unlock(&data->lock);
-	video_syna_sr100_mipi_stop(dev);
+	/*
+	 * `video_flush(abort=false)` waits until queued buffers drain to the
+	 * outgoing queue.
+	 */
+	deadline_ms = k_uptime_get() + 5000;
 
-	return 0;
+	for (;;) {
+		bool inflight;
+		bool in_empty;
+		bool complete_empty;
+		bool streaming;
+
+		k_mutex_lock(&data->lock, K_FOREVER);
+		streaming = (atomic_get(&data->streaming) != 0);
+		inflight = (atomic_get(&data->capture_inflight) != 0);
+		in_empty = (k_fifo_peek_head(&data->fifo_in) == NULL);
+		complete_empty = (k_fifo_peek_head(&data->fifo_complete) == NULL);
+
+		if (!streaming) {
+			while ((vbuf = k_fifo_get(&data->fifo_in, K_NO_WAIT)) != NULL) {
+				vbuf->bytesused = 0U;
+				k_fifo_put(&data->fifo_out, vbuf);
+				VIDEO_SYNA_RAISE_SIGNAL(data, VIDEO_BUF_ABORTED);
+			}
+			while ((vbuf = k_fifo_get(&data->fifo_complete, K_NO_WAIT)) != NULL) {
+				vbuf->bytesused = 0U;
+				k_fifo_put(&data->fifo_out, vbuf);
+				VIDEO_SYNA_RAISE_SIGNAL(data, VIDEO_BUF_ABORTED);
+			}
+			k_mutex_unlock(&data->lock);
+			return 0;
+		}
+
+		if (in_empty && complete_empty && !inflight) {
+			k_mutex_unlock(&data->lock);
+			return 0;
+		}
+
+		k_mutex_unlock(&data->lock);
+
+		if (k_uptime_get() > deadline_ms) {
+			return -ETIMEDOUT;
+		}
+
+		k_msleep(10);
+	}
 }
 
 #if IS_ENABLED(CONFIG_POLL)
@@ -1211,10 +1251,11 @@ static int video_syna_sr100_mipi_set_signal(const struct device *dev, struct k_p
 #endif
 
 static int video_syna_sr100_mipi_set_stream(const struct device *dev, bool enable,
-				 enum video_buf_type type)
+					 enum video_buf_type type)
 {
 	struct video_syna_sr100_mipi_data *data = dev->data;
 	bool do_stop = false;
+	bool do_start = false;
 	int ret = 0;
 
 	if (type != VIDEO_BUF_TYPE_OUTPUT) {
@@ -1229,14 +1270,14 @@ static int video_syna_sr100_mipi_set_stream(const struct device *dev, bool enabl
 			return 0;
 		}
 
-		/*
-		 * Keep the lock held during start so format/buffer state cannot change
-		 * while the pipeline is being configured.
-		 */
-		ret = video_syna_sr100_mipi_start(dev);
-		k_mutex_unlock(&data->lock);
-		return ret;
+		data->starting = true;
+		do_start = true;
 	} else {
+		if (data->starting) {
+			k_mutex_unlock(&data->lock);
+			return -EBUSY;
+		}
+
 		if (atomic_get(&data->streaming) == 0) {
 			k_mutex_unlock(&data->lock);
 			return 0;
@@ -1246,6 +1287,14 @@ static int video_syna_sr100_mipi_set_stream(const struct device *dev, bool enabl
 	}
 
 	k_mutex_unlock(&data->lock);
+
+	if (do_start) {
+		ret = video_syna_sr100_mipi_start(dev);
+		k_mutex_lock(&data->lock, K_FOREVER);
+		data->starting = false;
+		k_mutex_unlock(&data->lock);
+		return ret;
+	}
 
 	if (do_stop) {
 		video_syna_sr100_mipi_stop(dev);
@@ -1321,6 +1370,8 @@ static int video_syna_sr100_mipi_init_base(const struct device *dev)
 	atomic_clear(&data->streaming);
 	atomic_clear(&data->capture_inflight);
 	data->lib_initialized = false;
+	data->starting = false;
+	data->stopping = false;
 	data->frame_size = 0U;
 	data->lane_rate_kbps = 0U;
 	data->input_bit_depth = 0U;

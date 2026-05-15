@@ -29,8 +29,12 @@ Connect the camera sensor to the SR100 RDK as follows:
 * Sensor control bus to the SR100 RDK I2C1 bus (default OV02C10 node is
   ``ov02c10@36``).
 
-For console output and flashing, connect to the SR100 RDK console UART
-(``uart1`` in the board devicetree).
+Console / UART
+==============
+
+If your SR100 RDK DebugIC exposes a USB-to-UART bridge (CDC-ACM), prefer that for
+console output. Otherwise use an external USB-UART adapter connected to the
+board console UART pins (board revisions/firmware may differ).
 
 Configuration
 *************
@@ -118,15 +122,22 @@ The sample logs the destination address of the stored frame (for example
 1) Dump the frame from memory
 =============================
 
-Use OpenOCD in one terminal and ``arm-none-eabi-gdb`` in another terminal, then
-in the GDB terminal:
+Launch OpenOCD in one terminal (from the ``zephyr_srsdk`` repository root):
 
 .. code-block:: console
 
+   openocd -f boards/syna/astra_sr/sr100/support/openocd.cfg
+
+In another terminal, start ``arm-none-eabi-gdb`` and connect:
+
+.. code-block:: console
+
+   arm-none-eabi-gdb
    target extended-remote :3333
    dump binary memory frame_dump.raw <addr> (<addr> + <size>)
 
 Use the address printed by the sample and a size of ``width * height`` bytes.
+Large dumps (for example FHD) can take several minutes; this is expected.
 
 Example (FHD)
 -------------
@@ -138,24 +149,19 @@ If the log prints ``Stored captured frame: 2073600 bytes at 0x33f6f000``:
    target extended-remote :3333
    dump binary memory frame_dump.raw 0x33f6f000 (0x33f6f000 + 2073600)
 
-2) Convert RAW to PNG
-======================
+2) View the RAW dump (ffplay) / optionally convert (ffmpeg)
+==========================================================
 
-Use the provided script. It will prompt for:
+The captured ``frame_dump.raw`` is a RAW8 Bayer dump. Use ``ffplay`` to preview
+it with debayering, or ``ffmpeg`` to convert it to a PNG.
 
-* The input resolution (``1`` = FHD 1920x1080, ``2`` = WQVGA 480x270)
-* The RAW file path (press Enter to use the default ``frame_dump.raw``)
-
-Python prerequisites (host)
----------------------------
-
-The conversion script depends on ``numpy`` and ``matplotlib``. Install them on
-your host before running:
+From the dump directory, launch ``ffplay`` with debayering and scaling:
 
 .. code-block:: console
 
-   python3 -m pip install --user numpy matplotlib
+   cd zephyr_srsdk/samples/drivers/video/mipi_capture/tools
+   ffplay -hide_banner -loglevel error -f rawvideo -pixel_format bayer_rggb8 -video_size 1920x1080 \
+     -vf scale=iw*0.5:ih*0.5 frame_dump.raw
 
-.. code-block:: console
-
-   python3 samples/drivers/video/tools/raw2png.py
+Adjust ``-video_size`` for your captured resolution (for example ``480x270`` for
+WQVGA). Adjust the Bayer pattern in ``-pixel_format`` if your sensor differs.

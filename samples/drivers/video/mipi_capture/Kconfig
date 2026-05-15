@@ -57,17 +57,6 @@ config VIDEO_SAMPLE_WARMUP_DELAY_MS
 	default 500 if VIDEO_SAMPLE_RES_WQVGA
 	default 1000 if VIDEO_SAMPLE_RES_FHD
 
-config VIDEO_SAMPLE_TRIGGER_RETRIES
-	int "Trigger capture retries"
-	default 10 if VIDEO_SAMPLE_RES_WQVGA
-	default 30 if VIDEO_SAMPLE_RES_FHD
-	range 1 100
-
-config VIDEO_SAMPLE_TRIGGER_RETRY_MS
-	int "Delay between trigger retries (ms)"
-	default 50 if VIDEO_SAMPLE_RES_WQVGA
-	default 100 if VIDEO_SAMPLE_RES_FHD
-
 config VIDEO_SAMPLE_CAPTURE_COUNT
 	int "Number of frames to capture"
 	default 10
