@@ -94,9 +94,8 @@ Sample Output
    [00:00:00.223,000] <inf> enc_video_sample: enc video_enqueue[1] ret=0
    [00:00:00.229,000] <inf> enc_video_sample: enc video_stream_start ret=0
    [00:00:00.274,000] <inf> enc_video_sample: enc video_dequeue ret=0
-   [00:00:00.277,000] <inf> enc_video_sample: JPEG output: addr=0x33ea64c0 bytesused=31066
-   [00:00:00.281,000] <inf> enc_video_sample: GDB dump (JPEG): dump binary memory out.jpg 0x33ea64c0 (0x33ea64c0 + 31066)
-   [00:00:00.285,000] <inf> enc_video_sample: GDB dump (raw): dump binary memory frame_dump.raw 0xb4904000 (0xb4904000 + 0x7e900)
+   [00:00:00.277,000] <inf> enc_video_sample: Frame captured at addr=0x33ea64c0 bytesused=31066
+   [00:00:00.281,000] <inf> enc_video_sample: Dump JPEG from 0x33ea64c0 (0x33ea64c0 + 31066)
    [00:00:02.189,000] <inf> enc_video_sample: JPEG encoder validator done ret=0
 
 Frame Dump (Optional)
@@ -120,13 +119,6 @@ Terminal 1 (OpenOCD)
 Terminal 2 (GDB)
 ----------------
 
-.. code-block:: console
-
-   arm-none-eabi-gdb
-   target extended-remote :3333
-   dump binary memory frame_dump.raw 0xB4904000 (0xB4904000 + 0x7E900)  # Mode 1 (M2M) (960x540 RAW8)
-   dump binary memory frame_dump.raw 0xB4904000 (0xB4904000 + 0x1FA40)  # Mode 0 (S2M) (480x270 RAW8)
-
 For the JPEG output, use the address and size printed by the sample:
 
 .. code-block:: console
@@ -135,26 +127,5 @@ For the JPEG output, use the address and size printed by the sample:
    target extended-remote :3333
    dump binary memory out.jpg <APP_BUF_ADDR> (<APP_BUF_ADDR> + <BYTESUSED>)
 
-The captured JPEG is already a standard ``.jpg``; no JPEG-to-PNG conversion step
-is required.
-
-Memory dumps can take several minutes depending on the transport and size.
-
-2) View the RAW dump (ffplay)
-=============================
-
-The dumped ``frame_dump.raw`` is a RAW8 Bayer frame. From the directory where
-you saved the dump, preview it with ``ffplay`` (example uses RGGB and 50% scale):
-
-.. code-block:: console
-
-   # Mode 1 (M2M): 960x540 RAW8
-   ffplay -hide_banner -loglevel error -f rawvideo -pixel_format bayer_rggb8 -video_size 960x540 \
-     -vf scale=iw*0.5:ih*0.5 frame_dump.raw
-
-   # Mode 0 (S2M): 480x270 RAW8
-   ffplay -hide_banner -loglevel error -f rawvideo -pixel_format bayer_rggb8 -video_size 480x270 \
-     -vf scale=iw*0.5:ih*0.5 frame_dump.raw
-
-If colors look wrong, try other Bayer patterns (``bayer_bggr8``, ``bayer_grbg8``,
-``bayer_gbrg8``) to match your sensor.
+View the JPEG file using any standard image viewer. Memory dump may take several minutes depending on image size.
+ 

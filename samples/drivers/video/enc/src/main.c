@@ -305,35 +305,15 @@ static int wait_and_report(const struct device *enc, uint32_t mode)
 		return ret;
 	}
 
-	LOG_INF("JPEG output: addr=%p bytesused=%u",
+	LOG_INF("Frame captured at addr=%p bytesused=%u",
 		out->buffer, (unsigned int)out->bytesused);
 
 	if (out->bytesused != 0U) {
 #if IS_ENABLED(CONFIG_CACHE_MANAGEMENT) && IS_ENABLED(CONFIG_DCACHE)
         (void)sys_cache_data_flush_range(out->buffer, out->bytesused);
 #endif
-		LOG_INF("GDB dump (JPEG): dump binary memory out.jpg %p (%p + %u)",
+		LOG_INF("Dump JPEG from %p (%p + %u)",
 			out->buffer, out->buffer, (unsigned int)out->bytesused);
-	}
-
-	if ((APP_MEM_BASE != 0U) && (APP_MEM_SIZE != 0U)) {
-		uintptr_t raw_addr;
-		size_t raw_size;
-
-		if (mode == APP_MODE_MEMORY_INPUT) {
-			raw_addr = APP_MEM_BASE + (uintptr_t)APP_SRC_OFFSET;
-			raw_size = APP_MEMORY_INPUT_RAW_SIZE;
-		} else {
-			raw_addr = APP_MEM_BASE + (uintptr_t)APP_RAW_OFFSET;
-			raw_size = (size_t)APP_LIVE_WIDTH * (size_t)APP_LIVE_HEIGHT;
-		}
-
-		if (raw_size != 0U) {
-			LOG_INF("GDB dump (raw): dump binary memory frame_dump.raw 0x%lx (0x%lx + 0x%lx)",
-				(unsigned long)raw_addr,
-				(unsigned long)raw_addr,
-				(unsigned long)raw_size);
-		}
 	}
 
 	return 0;
