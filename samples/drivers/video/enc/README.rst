@@ -52,7 +52,8 @@ encoder node:
 Build commands
 ==============
 
-Default (live sensor path, ``mode = <0>``):
+Default mode (live sensor path, ``mode = <0>``):
+------------------------------------------------
 
 .. zephyr-app-commands::
    :zephyr-app: samples/drivers/video/enc
@@ -62,9 +63,20 @@ Default (live sensor path, ``mode = <0>``):
    :compact:
 
 Reserved-memory input mode build:
+----------------------------------
 
-Note: This build flag enables the reserved-memory input path used by the sample (it
+This build flag enables the reserved-memory input path used by the sample (it
 generates a deterministic 960x540 frame at runtime when enabled).
+
+Reserved-memory input test pattern
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+When ``ENC_MEMORY_INPUT`` is enabled, the sample seeds a synthetic raw Bayer frame
+into reserved memory before starting the encoder. The generated image is:
+
+* Vertical color bars: ``| Black | Blue | Cyan | Green | Magenta | Red | Yellow | White |``
+* A checkerboard overlay in the bottom 25% of the image (this appears as “hatching”
+  in the JPEG output and is expected).
 
 .. zephyr-app-commands::
    :zephyr-app: samples/drivers/video/enc

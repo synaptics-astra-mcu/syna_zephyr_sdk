@@ -76,15 +76,12 @@ FHD (1920x1080):
 
 WQVGA (480x270):
 
-Note: For WQVGA builds, select the resolution in Kconfig by setting
-   ``VIDEO_SAMPLE_RESOLUTION`` to ``VIDEO_SAMPLE_RES_WQVGA``.
-
 .. zephyr-app-commands::
    :zephyr-app: samples/drivers/video/mipi_capture
    :board: sr100_rdk/sr100/m55
    :goals: build
    :west-args: -p always
-   :gen-args: -DFILE_SUFFIX=_wqvga
+   :gen-args: -DFILE_SUFFIX=_wqvga -DCONFIG_VIDEO_SAMPLE_RES_WQVGA=y
    :compact:
 
 Flash/run using your normal runner (for example ``west flash``), then monitor
