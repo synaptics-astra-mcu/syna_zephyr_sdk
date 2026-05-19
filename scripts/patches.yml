@@ -1,4 +1,4 @@
 patches:
   - path: samples/dma/zephyr-uart-dma.patch
   - path: samples/dma/zephyr-spi-dma.patch
-  - path: udc_dwc2_sr100.patch
+  - path: samples/usb/udc_dwc2_sr100.patch

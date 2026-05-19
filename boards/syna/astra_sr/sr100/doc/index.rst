@@ -116,7 +116,7 @@ On a Linux host terminal, run:
 Initialization
 ==============
 
-Next, obtain ``zephyr_srsdk`` either by ``west init`` or from a ``.zip`` file.
+Next, obtain ``syna_zephyr_sdk`` either by ``west init`` or from a ``.zip`` file.
 
 Option 1: west init
 
@@ -130,13 +130,13 @@ command:
 
 Option 2: .zip file
 
-Copy the ``zephyr_srsdk-main.zip`` file into ``~/syna_zephyr`` and run:
+Copy the ``syna_zephyr_sdk-main.zip`` file into ``~/syna_zephyr`` and run:
 
 .. code-block:: console
 
    cd ~/syna_zephyr
-   unzip zephyr_srsdk-main.zip
-   mv zephyr_srsdk-main zephyr_srsdk
+   unzip syna_zephyr_sdk-main.zip
+   mv syna_zephyr_sdk-main syna_zephyr_sdk
    west init -l .
 
 
@@ -181,7 +181,7 @@ You can also try the shell and blinky examples:
 
 .. code-block:: console
 
-   cd ~/syna_zephyr/zephyr_srsdk
+   cd ~/syna_zephyr/syna_zephyr_sdk
    export ZEPHYR_TOOLCHAIN_VARIANT=zephyr
    export ZEPHYR_SDK_INSTALL_DIR=<path/to/zephyr-sdk-1.0.0>
    west build -b sr100_rdk/sr100/m55 ../zephyr/samples/subsys/shell/shell_module
@@ -192,7 +192,7 @@ For a clean rebuild:
 
 .. code-block:: bash
 
-   cd ~/syna_zephyr/zephyr_srsdk
+   cd ~/syna_zephyr/syna_zephyr_sdk
    export ZEPHYR_TOOLCHAIN_VARIANT=zephyr
    export ZEPHYR_SDK_INSTALL_DIR=<path/to/zephyr-sdk-1.0.0>
    west build -p always -b sr100_rdk/sr100/m55 ../zephyr/samples/subsys/shell/shell_module
@@ -247,7 +247,7 @@ Next, run the ``west debugserver`` command.
 
 .. code-block:: console
 
-   cd ~/syna_zephyr/zephyr_srsdk
+   cd ~/syna_zephyr/syna_zephyr_sdk
    west debugserver
 
 Flashing image using WSL/Linux
