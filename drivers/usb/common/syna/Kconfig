@@ -1,0 +1,8 @@
+# SPDX-License-Identifier: Apache-2.0
+
+config PHY_SYNA_SL261X_USB2
+	bool "Synaptics SL261X USB PHY driver"
+	default y
+        depends on DT_HAS_SYNA_SL261X_USB2_PHY_ENABLED
+        help
+          Enable SYNA SL261X USB2 PHY driver.

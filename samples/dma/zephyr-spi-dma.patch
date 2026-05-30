@@ -1,0 +1,537 @@
+diff --git a/drivers/spi/Kconfig.dw b/drivers/spi/Kconfig.dw
+index 88395e5a13f..e13693862eb 100644
+--- a/drivers/spi/Kconfig.dw
++++ b/drivers/spi/Kconfig.dw
+@@ -27,4 +27,11 @@ config SPI_DW_HSSI
+ 	  Use register layout compatible with the SPI DW HSSI variant of the
+ 	  peripheral.
+ 
++config SPI_DW_DMA_THRESHOLD
++	int "Minimum transfer size in bytes for DMA"
++	default 32
++	range 1 65535
++	help
++	  Transfers smaller than this value use the interrupt-driven path.
++
+ endif # SPI_DW
+diff --git a/drivers/spi/spi_dw.c b/drivers/spi/spi_dw.c
+index 587342931ae..b43690a3294 100644
+--- a/drivers/spi/spi_dw.c
++++ b/drivers/spi/spi_dw.c
+@@ -30,6 +30,11 @@ LOG_MODULE_REGISTER(spi_dw);
+ #include <zephyr/drivers/interrupt_controller/ioapic.h>
+ #endif
+ 
++#ifdef CONFIG_DMA
++#include <zephyr/cache.h>
++#include <zephyr/drivers/dma.h>
++#endif
++
+ #include <zephyr/drivers/spi.h>
+ #include <zephyr/drivers/spi/rtio.h>
+ #include <zephyr/irq.h>
+@@ -63,9 +68,15 @@ static void completed(const struct device *dev, int error)
+ 
+ out:
+ 	/* need to give time for FIFOs to drain before issuing more commands */
+-	while (test_bit_sr_busy(dev)) {
++	if (!spi_dw_is_slave(spi)) {
++		while (test_bit_sr_busy(dev)) {
++		}
+ 	}
+ 
++#ifdef CONFIG_DMA
++	write_dmacr(dev, 0);
++#endif
++
+ 	/* Disabling interrupts */
+ 	write_imr(dev, DW_SPI_IMR_MASK);
+ 	/* Disabling the controller */
+@@ -92,7 +103,11 @@ static void push_data(const struct device *dev)
+ 	uint32_t data = 0U;
+ 	uint32_t f_tx;
+ 
+-	if (spi_context_rx_on(&spi->ctx)) {
++	if (spi_dw_is_slave(spi)) {
++		/* Slave: fill TX FIFO independently of RX occupancy.  The slave
++		 * must pre-load response data before the master clocks. */
++		f_tx = info->fifo_depth - read_txflr(dev);
++	} else if (spi_context_rx_on(&spi->ctx)) {
+ 		f_tx = info->fifo_depth - read_txflr(dev) -
+ 			read_rxflr(dev);
+ 		if ((int)f_tx < 0) {
+@@ -342,6 +357,230 @@ static void spi_dw_update_txftlr(const struct device *dev,
+ 	write_txftlr(dev, reg_data);
+ }
+ 
++#ifdef CONFIG_DMA
++#define SPI_DW_DMA_DONE_TX BIT(0)
++#define SPI_DW_DMA_DONE_RX BIT(1)
++
++static __aligned(4) uint32_t spi_dw_dma_tx_dummy;
++static __aligned(4) uint32_t spi_dw_dma_rx_dummy;
++
++static bool spi_dw_dma_request_supported(const struct device *dev,
++					 struct spi_dw_data *spi,
++					 const struct spi_buf_set *tx_bufs,
++					 const struct spi_buf_set *rx_bufs)
++{
++	const struct spi_dw_config *info = dev->config;
++	const struct spi_buf *tx = (tx_bufs && tx_bufs->count) ? tx_bufs->buffers : NULL;
++	const struct spi_buf *rx = (rx_bufs && rx_bufs->count) ? rx_bufs->buffers : NULL;
++	size_t tx_len = tx ? tx->len : 0U;
++	size_t rx_len = rx ? rx->len : 0U;
++	size_t bytes = MAX(tx_len, rx_len);
++
++	if (!info->dma_dev) {
++		return false;
++	}
++
++	if ((tx_bufs && tx_bufs->count > 1U) || (rx_bufs && rx_bufs->count > 1U)) {
++		return false;
++	}
++
++	if (tx_len && rx_len && (tx_len != rx_len)) {
++		return false;
++	}
++
++	if (!bytes || (bytes < CONFIG_SPI_DW_DMA_THRESHOLD)) {
++		return false;
++	}
++
++	if ((bytes % spi->dfs) != 0U) {
++		return false;
++	}
++
++	return true;
++}
++
++static void spi_dw_dma_stop(const struct device *dev)
++{
++	const struct spi_dw_config *info = dev->config;
++
++	if (!info->dma_dev) {
++		return;
++	}
++
++	(void)dma_stop(info->dma_dev, info->dma_tx_channel);
++	(void)dma_stop(info->dma_dev, info->dma_rx_channel);
++}
++
++static void spi_dw_dma_callback(const struct device *dma_dev,
++				void *user_data,
++				uint32_t channel,
++				int status)
++{
++	const struct device *dev = user_data;
++	const struct spi_dw_config *info = dev->config;
++	struct spi_dw_data *spi = dev->data;
++	atomic_val_t done_bit = 0;
++
++	ARG_UNUSED(dma_dev);
++
++	if (channel == info->dma_tx_channel) {
++		done_bit = SPI_DW_DMA_DONE_TX;
++	} else if (channel == info->dma_rx_channel) {
++		done_bit = SPI_DW_DMA_DONE_RX;
++	} else {
++		return;
++	}
++
++	if ((status != 0) && (spi->dma_status == 0)) {
++		spi->dma_status = status;
++
++		if (atomic_cas(&spi->dma_complete, 0, 1)) {
++			spi_dw_dma_stop(dev);
++			completed(dev, status);
++		}
++
++		return;
++	}
++
++	(void)atomic_or(&spi->dma_done_mask, done_bit);
++
++	if (((atomic_get(&spi->dma_done_mask) & (SPI_DW_DMA_DONE_TX | SPI_DW_DMA_DONE_RX)) !=
++	     (SPI_DW_DMA_DONE_TX | SPI_DW_DMA_DONE_RX)) || !atomic_cas(&spi->dma_complete, 0, 1)) {
++		return;
++	}
++
++	spi_dw_dma_stop(dev);
++
++	if (spi->dma_status == 0) {
++		if (spi->dma_tx_frames) {
++			spi_context_update_tx(&spi->ctx, spi->dfs, spi->dma_tx_frames);
++		}
++
++		if (spi->dma_rx_frames) {
++			sys_cache_data_invd_range(spi->ctx.rx_buf, spi->dma_rx_frames * spi->dfs);
++			spi_context_update_rx(&spi->ctx, spi->dfs, spi->dma_rx_frames);
++		}
++	}
++
++	completed(dev, spi->dma_status);
++}
++
++static int spi_dw_dma_start(const struct device *dev,
++			    struct spi_dw_data *spi)
++{
++	const struct spi_dw_config *info = dev->config;
++	uint32_t tx_frames = spi->ctx.tx_len ? spi->ctx.tx_len : spi->ctx.rx_len;
++	uint32_t rx_frames = spi->ctx.rx_len ? spi->ctx.rx_len : spi->ctx.tx_len;
++	uint32_t tx_bytes = tx_frames * spi->dfs;
++	uint32_t rx_bytes = rx_frames * spi->dfs;
++	uint32_t source_address;
++	uint32_t dest_address;
++	uint32_t source_addr_adjust;
++	uint32_t dest_addr_adjust;
++	struct dma_config rx_dma_cfg = {
++		.source_data_size = spi->dfs,
++		.dest_data_size = spi->dfs,
++		.block_count = 1,
++		.channel_direction = PERIPHERAL_TO_MEMORY,
++		.source_burst_length = 1,
++		.dest_burst_length = 1,
++		.complete_callback_en = true,
++		.dma_callback = spi_dw_dma_callback,
++		.user_data = (void *)dev,
++	};
++	struct dma_config tx_dma_cfg = {
++		.source_data_size = spi->dfs,
++		.dest_data_size = spi->dfs,
++		.block_count = 1,
++		.channel_direction = MEMORY_TO_PERIPHERAL,
++		.source_burst_length = 1,
++		.dest_burst_length = 1,
++		.complete_callback_en = true,
++		.dma_callback = spi_dw_dma_callback,
++		.user_data = (void *)dev,
++	};
++	struct dma_block_config rx_block_cfg;
++	struct dma_block_config tx_block_cfg;
++	int ret;
++
++	if ((tx_frames == 0U) || (rx_frames == 0U) || (tx_bytes != rx_bytes)) {
++		return -EINVAL;
++	}
++
++	spi->dma_tx_frames = spi->ctx.tx_len ? tx_frames : 0U;
++	spi->dma_rx_frames = spi->ctx.rx_len ? rx_frames : 0U;
++	spi->dma_status = 0;
++	atomic_clear(&spi->dma_done_mask);
++	atomic_clear(&spi->dma_complete);
++
++	if (spi_context_rx_buf_on(&spi->ctx)) {
++		dest_address = (uint32_t)spi->ctx.rx_buf;
++		dest_addr_adjust = DMA_ADDR_ADJ_INCREMENT;
++	} else {
++		dest_address = (uint32_t)&spi_dw_dma_rx_dummy;
++		dest_addr_adjust = DMA_ADDR_ADJ_NO_CHANGE;
++	}
++
++	if (spi_context_tx_buf_on(&spi->ctx)) {
++		source_address = (uint32_t)spi->ctx.tx_buf;
++		source_addr_adjust = DMA_ADDR_ADJ_INCREMENT;
++		sys_cache_data_flush_range((void *)spi->ctx.tx_buf, tx_bytes);
++	} else {
++		source_address = (uint32_t)&spi_dw_dma_tx_dummy;
++		source_addr_adjust = DMA_ADDR_ADJ_NO_CHANGE;
++	}
++
++	(void)memset(&rx_block_cfg, 0, sizeof(rx_block_cfg));
++	rx_block_cfg.block_size = rx_bytes;
++	rx_block_cfg.source_address = (uint32_t)((mm_reg_t)DEVICE_MMIO_GET(dev) + DW_SPI_REG_DR);
++	rx_block_cfg.dest_address = dest_address;
++	rx_block_cfg.source_addr_adj = DMA_ADDR_ADJ_NO_CHANGE;
++	rx_block_cfg.dest_addr_adj = dest_addr_adjust;
++	rx_dma_cfg.head_block = &rx_block_cfg;
++
++	(void)memset(&tx_block_cfg, 0, sizeof(tx_block_cfg));
++	tx_block_cfg.block_size = tx_bytes;
++	tx_block_cfg.source_address = source_address;
++	tx_block_cfg.dest_address = (uint32_t)((mm_reg_t)DEVICE_MMIO_GET(dev) + DW_SPI_REG_DR);
++	tx_block_cfg.source_addr_adj = source_addr_adjust;
++	tx_block_cfg.dest_addr_adj = DMA_ADDR_ADJ_NO_CHANGE;
++	tx_dma_cfg.head_block = &tx_block_cfg;
++
++	ret = dma_config(info->dma_dev, info->dma_rx_channel, &rx_dma_cfg);
++	if (ret != 0) {
++		LOG_ERR("dma_config rx failed %d", ret);
++		return ret;
++	}
++
++	ret = dma_config(info->dma_dev, info->dma_tx_channel, &tx_dma_cfg);
++	if (ret != 0) {
++		LOG_ERR("dma_config tx failed %d", ret);
++		return ret;
++	}
++
++	write_dmardlr(dev, 0);
++	write_dmatdlr(dev, 0);
++	write_dmacr(dev, DW_SPI_DMACR_TX_RX);
++
++	ret = dma_start(info->dma_dev, info->dma_rx_channel);
++	if (ret != 0) {
++		LOG_ERR("dma_start rx failed %d", ret);
++		write_dmacr(dev, 0);
++		return ret;
++	}
++
++	ret = dma_start(info->dma_dev, info->dma_tx_channel);
++	if (ret != 0) {
++		LOG_ERR("dma_start tx failed %d", ret);
++		spi_dw_dma_stop(dev);
++		write_dmacr(dev, 0);
++		return ret;
++	}
++
++	return 0;
++}
++#endif
++
+ static int transceive(const struct device *dev,
+ 		      const struct spi_config *config,
+ 		      const struct spi_buf_set *tx_bufs,
+@@ -355,6 +594,7 @@ static int transceive(const struct device *dev,
+ 	uint32_t tmod = DW_SPI_CTRLR0_TMOD_TX_RX;
+ 	uint32_t dw_spi_rxftlr_dflt = (info->fifo_depth * 5) / 8;
+ 	uint32_t reg_data;
++	bool use_dma = false;
+ 	int ret;
+ 
+ 	spi_context_lock(&spi->ctx, asynchronous, cb, userdata, config);
+@@ -371,10 +611,15 @@ static int transceive(const struct device *dev,
+ 		goto out;
+ 	}
+ 
+-	if (!rx_bufs || !rx_bufs->buffers) {
+-		tmod = DW_SPI_CTRLR0_TMOD_TX;
+-	} else if (!tx_bufs || !tx_bufs->buffers) {
+-		tmod = DW_SPI_CTRLR0_TMOD_RX;
++#ifdef CONFIG_DMA
++	use_dma = spi_dw_dma_request_supported(dev, spi, tx_bufs, rx_bufs);
++#endif
++	if (!use_dma) {
++		if (!rx_bufs || !rx_bufs->buffers) {
++			tmod = DW_SPI_CTRLR0_TMOD_TX;
++		} else if (!tx_bufs || !tx_bufs->buffers) {
++			tmod = DW_SPI_CTRLR0_TMOD_RX;
++		}
+ 	}
+ 
+ 	/* ToDo: add a way to determine EEPROM mode */
+@@ -403,9 +648,9 @@ static int transceive(const struct device *dev,
+ 		}
+ 	}
+ 
+-	/* Updating TMOD in CTRLR0 register */
++	/* Updating TMOD (and SLV_OE for slaves) in CTRLR0 register */
+ 	reg_data = read_ctrlr0(dev);
+-	reg_data &= ~DW_SPI_CTRLR0_TMOD_RESET;
++	reg_data &= ~(DW_SPI_CTRLR0_TMOD_RESET | DW_SPI_CTRLR0_SLV_OE);
+ 	reg_data |= tmod;
+ 
+ 	write_ctrlr0(dev, reg_data);
+@@ -415,6 +660,34 @@ static int transceive(const struct device *dev,
+ 
+ 	spi->fifo_diff = 0U;
+ 
++#ifdef CONFIG_DMA
++	if (!use_dma) {
++		write_dmacr(dev, 0);
++	} else {
++		write_imr(dev, DW_SPI_IMR_MASK);
++
++		if (!spi_dw_is_slave(spi)) {
++			if (spi_cs_is_gpio(config)) {
++				spi_context_cs_control(&spi->ctx, true);
++			} else {
++				write_ser(dev, BIT(config->slave));
++			}
++		}
++
++		LOG_DBG("Enabling controller");
++		set_bit_ssienr(dev);
++
++		ret = spi_dw_dma_start(dev, spi);
++		if (ret != 0) {
++			completed(dev, ret);
++			goto out;
++		}
++
++		ret = spi_context_wait_for_completion(&spi->ctx);
++		goto out;
++	}
++#endif
++
+ 	/* Tx Threshold */
+ 	spi_dw_update_txftlr(dev, spi);
+ 
+@@ -435,23 +708,35 @@ static int transceive(const struct device *dev,
+ 	/* Rx Threshold */
+ 	write_rxftlr(dev, reg_data);
+ 
+-	/* Enable interrupts */
+-	reg_data = !rx_bufs ?
+-		DW_SPI_IMR_UNMASK & DW_SPI_IMR_MASK_RX :
+-		DW_SPI_IMR_UNMASK;
+-	write_imr(dev, reg_data);
++	if (spi_dw_is_slave(spi)) {
++		/* Slave: enable the peripheral first (DR writes require SSIENR),
++		 * pre-fill the TX FIFO, then unmask interrupts so the ISR
++		 * doesn't fire until data is loaded. */
++		LOG_DBG("Enabling controller");
++		set_bit_ssienr(dev);
++
++		push_data(dev);
++
++		reg_data = !rx_bufs ?
++			DW_SPI_IMR_UNMASK & DW_SPI_IMR_MASK_RX :
++			DW_SPI_IMR_UNMASK;
++		write_imr(dev, reg_data);
++	} else {
++		reg_data = !rx_bufs ?
++			DW_SPI_IMR_UNMASK & DW_SPI_IMR_MASK_RX :
++			DW_SPI_IMR_UNMASK;
++		write_imr(dev, reg_data);
+ 
+-	if (!spi_dw_is_slave(spi)) {
+ 		/* if cs is not defined as gpio, use hw cs */
+ 		if (spi_cs_is_gpio(config)) {
+ 			spi_context_cs_control(&spi->ctx, true);
+ 		} else {
+ 			write_ser(dev, BIT(config->slave));
+ 		}
+-	}
+ 
+-	LOG_DBG("Enabling controller");
+-	set_bit_ssienr(dev);
++		LOG_DBG("Enabling controller");
++		set_bit_ssienr(dev);
++	}
+ 
+ 	ret = spi_context_wait_for_completion(&spi->ctx);
+ 
+@@ -576,6 +861,15 @@ int spi_dw_init(const struct device *dev)
+ 	write_imr(dev, DW_SPI_IMR_MASK);
+ 	clear_bit_ssienr(dev);
+ 
++#ifdef CONFIG_DMA
++	write_dmacr(dev, 0);
++
++	if (info->dma_dev && !device_is_ready(info->dma_dev)) {
++		LOG_ERR("DMA device not ready");
++		return -ENODEV;
++	}
++#endif
++
+ #if !DT_ANY_INST_PROP_STATUS_OKAY(aux_reg)
+ 	/* SSI component version */
+ 	spi->version = read_ssi_comp_version(dev);
+@@ -668,9 +962,27 @@ COND_CODE_1(IS_EQ(DT_NUM_IRQS(DT_DRV_INST(inst)), 1),              \
+ #define CLOCK_DW_CONFIG(n)
+ #endif
+ 
++#ifdef CONFIG_DMA
++#define DMA_DW_VALIDATE(inst)                                                               \
++	BUILD_ASSERT(!DT_INST_NODE_HAS_PROP(inst, dmas) ||                                  \
++		(DT_INST_DMAS_HAS_NAME(inst, tx) && DT_INST_DMAS_HAS_NAME(inst, rx)),       \
++		"snps,designware-spi with dmas requires dma-names = \"tx\", \"rx\"")
++
++#define DMA_DW_CONFIG(inst)                                                                 \
++	COND_CODE_1(DT_INST_NODE_HAS_PROP(inst, dmas),                                      \
++		(.dma_dev = DEVICE_DT_GET(DT_INST_DMAS_CTLR_BY_NAME(inst, tx)),             \
++		 .dma_tx_channel = DT_INST_DMAS_CELL_BY_NAME(inst, tx, channel),            \
++		 .dma_rx_channel = DT_INST_DMAS_CELL_BY_NAME(inst, rx, channel),),          \
++		(.dma_dev = NULL,))
++#else
++#define DMA_DW_VALIDATE(inst)
++#define DMA_DW_CONFIG(inst)
++#endif
++
+ #define SPI_DW_INIT(inst)                                                                   \
+ 	IF_ENABLED(CONFIG_PINCTRL, (PINCTRL_DT_INST_DEFINE(inst);))                         \
+ 	SPI_DW_IRQ_HANDLER(inst);                                                           \
++	DMA_DW_VALIDATE(inst);                                                              \
+ 	static struct spi_dw_data spi_dw_data_##inst = {                                    \
+ 		SPI_CONTEXT_INIT_LOCK(spi_dw_data_##inst, ctx),                             \
+ 		SPI_CONTEXT_INIT_SYNC(spi_dw_data_##inst, ctx),                             \
+@@ -698,7 +1010,8 @@ COND_CODE_1(IS_EQ(DT_NUM_IRQS(DT_DRV_INST(inst)), 1),              \
+ 			.set_bit_func = reg_set_bit,                                        \
+ 			.clear_bit_func = reg_clear_bit,                                    \
+ 			.test_bit_func = reg_test_bit,))                                    \
+-		CLOCK_DW_CONFIG(inst)                                                      \
++		DMA_DW_CONFIG(inst)                                                         \
++		CLOCK_DW_CONFIG(inst)                                                       \
+ 	};                                                                                  \
+ 	SPI_DEVICE_DT_INST_DEFINE(inst,                                                     \
+ 		spi_dw_init,                                                                \
+diff --git a/drivers/spi/spi_dw.h b/drivers/spi/spi_dw.h
+index 0868cd50dde..aececae2972 100644
+--- a/drivers/spi/spi_dw.h
++++ b/drivers/spi/spi_dw.h
+@@ -13,6 +13,9 @@
+ #include <string.h>
+ #include <zephyr/device.h>
+ #include <zephyr/drivers/spi.h>
++#ifdef CONFIG_DMA
++#include <zephyr/sys/atomic.h>
++#endif
+ 
+ #if defined(CONFIG_CLOCK_CONTROL)
+ #include <zephyr/drivers/clock_control.h>
+@@ -54,6 +57,11 @@ struct spi_dw_config {
+ #if defined(CONFIG_CLOCK_CONTROL)
+ 	const struct device *clk_dev;
+ 	const clock_control_subsys_t clk_id;
++#endif
++#ifdef CONFIG_DMA
++	const struct device *dma_dev;
++	uint32_t dma_tx_channel;
++	uint32_t dma_rx_channel;
+ #endif
+ 	spi_dw_read_t read_func;
+ 	spi_dw_write_t write_func;
+@@ -70,6 +78,13 @@ struct spi_dw_data {
+ #endif
+ 	uint8_t dfs;	/* dfs in bytes: 1,2 or 4 */
+ 	uint8_t fifo_diff;	/* cannot be bigger than FIFO depth */
++#ifdef CONFIG_DMA
++	atomic_t dma_done_mask;
++	atomic_t dma_complete;
++	uint32_t dma_tx_frames;
++	uint32_t dma_rx_frames;
++	int dma_status;
++#endif
+ };
+ 
+ /* Register operation functions */
+@@ -220,6 +235,14 @@ static int reg_test_bit(uint8_t bit, mm_reg_t addr, uint32_t off)
+ #define DW_SPI_CTRLR0_TMOD_EEPROM	(3 << DW_SPI_CTRLR0_TMOD_SHIFT)
+ #define DW_SPI_CTRLR0_TMOD_RESET	(3 << DW_SPI_CTRLR0_TMOD_SHIFT)
+ 
++/* DMACR bits */
++#define DW_SPI_DMACR_RDMAE_BIT		(0)
++#define DW_SPI_DMACR_TDMAE_BIT		(1)
++
++#define DW_SPI_DMACR_RDMAE		BIT(DW_SPI_DMACR_RDMAE_BIT)
++#define DW_SPI_DMACR_TDMAE		BIT(DW_SPI_DMACR_TDMAE_BIT)
++#define DW_SPI_DMACR_TX_RX		(DW_SPI_DMACR_RDMAE | DW_SPI_DMACR_TDMAE)
++
+ #define DW_SPI_CTRLR0_DFS_16(__bpw)	((__bpw) - 1)
+ #define DW_SPI_CTRLR0_DFS_32(__bpw)	(((__bpw) - 1) << 16)
+ 
+diff --git a/drivers/spi/spi_dw_regs.h b/drivers/spi/spi_dw_regs.h
+index 711c6690091..79080526c37 100644
+--- a/drivers/spi/spi_dw_regs.h
++++ b/drivers/spi/spi_dw_regs.h
+@@ -48,6 +48,10 @@ DEFINE_MM_REG_WRITE(txftlr, DW_SPI_REG_TXFTLR, 32)
+ DEFINE_MM_REG_WRITE(rxftlr, DW_SPI_REG_RXFTLR, 32)
+ DEFINE_MM_REG_READ(rxftlr, DW_SPI_REG_RXFTLR, 32)
+ DEFINE_MM_REG_READ(txftlr, DW_SPI_REG_TXFTLR, 32)
++DEFINE_MM_REG_WRITE(dmacr, DW_SPI_REG_DMACR, 32)
++DEFINE_MM_REG_READ(dmacr, DW_SPI_REG_DMACR, 32)
++DEFINE_MM_REG_WRITE(dmatdlr, DW_SPI_REG_DMATDLR, 32)
++DEFINE_MM_REG_WRITE(dmardlr, DW_SPI_REG_DMARDLR, 32)
+ DEFINE_MM_REG_WRITE(dr, DW_SPI_REG_DR, 32)
+ DEFINE_MM_REG_READ(dr, DW_SPI_REG_DR, 32)
+ DEFINE_MM_REG_READ(ssi_comp_version, DW_SPI_REG_SSI_COMP_VERSION, 32)

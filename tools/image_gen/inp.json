@@ -1,0 +1,11 @@
+{
+    "files": [
+        {
+            "filepath": "zephyr.elf",
+            "load_address": "0x10000000",
+            "flash_offset": "0x25000",
+            "xspi_offset": "0x2C000",
+            "Image_id" : "0x00000011"
+        }
+    ]
+}

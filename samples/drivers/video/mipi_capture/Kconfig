@@ -1,0 +1,65 @@
+# Copyright (c) 2026 Synaptics Incorporated
+# SPDX-License-Identifier: Apache-2.0
+
+mainmenu "MIPI capture sample application"
+
+# Pull in Zephyr's Kconfig tree. Without this, prj.conf/defconfig symbols like
+# LOG/VIDEO/SERIAL/etc will appear "undefined" and Kconfig will abort.
+source "Kconfig.zephyr"
+
+menu "MIPI Capture Sample"
+
+choice VIDEO_SAMPLE_RESOLUTION
+	prompt "Capture resolution"
+	default VIDEO_SAMPLE_RES_FHD
+	help
+	  Select which sensor mode / capture resolution the sample configures.
+
+config VIDEO_SAMPLE_RES_WQVGA
+	bool "480x270 (WQVGA)"
+
+config VIDEO_SAMPLE_RES_FHD
+	bool "1920x1080 (FHD)"
+
+endchoice
+
+config VIDEO_SAMPLE_PIXFMT_RAW8
+	bool
+	default y
+
+config VIDEO_SAMPLE_FRAME_WIDTH
+	int "Frame width (pixels)"
+	default 480 if VIDEO_SAMPLE_RES_WQVGA
+	default 1920 if VIDEO_SAMPLE_RES_FHD
+
+config VIDEO_SAMPLE_FRAME_HEIGHT
+	int "Frame height (pixels)"
+	default 270 if VIDEO_SAMPLE_RES_WQVGA
+	default 1080 if VIDEO_SAMPLE_RES_FHD
+
+config VIDEO_SAMPLE_FRAME_PITCH
+	int "Frame pitch (bytes/line)"
+	default 480 if VIDEO_SAMPLE_RES_WQVGA
+	default 1920 if VIDEO_SAMPLE_RES_FHD
+
+config VIDEO_SAMPLE_BUFFER_COUNT
+	int "Video buffer count"
+	default 2
+	range 1 8
+
+config VIDEO_SAMPLE_CAPTURE_TIMEOUT_MS
+	int "Capture timeout (ms)"
+	default 2000 if VIDEO_SAMPLE_RES_WQVGA
+	default 5000 if VIDEO_SAMPLE_RES_FHD
+
+config VIDEO_SAMPLE_WARMUP_DELAY_MS
+	int "Warm-up delay before capture (ms)"
+	default 500 if VIDEO_SAMPLE_RES_WQVGA
+	default 1000 if VIDEO_SAMPLE_RES_FHD
+
+config VIDEO_SAMPLE_CAPTURE_COUNT
+	int "Number of frames to capture"
+	default 10
+	range 1 1000
+
+endmenu

@@ -1,0 +1,16 @@
+# HW Info driver configuration options
+
+# Copyright (c) 2025 Synaptics Incorporated
+# SPDX-License-Identifier: Apache-2.0
+
+if HWINFO
+
+config HWINFO_SYNA_SR100
+	bool "Synaptics SR100 hwinfo"
+	default y
+	depends on SOC_SERIES_SR1XX
+	select HWINFO_HAS_DRIVER
+	help
+	  Enable Synaptics hwinfo driver
+
+endif

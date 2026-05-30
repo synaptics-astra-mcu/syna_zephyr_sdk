@@ -1,0 +1,22 @@
+manifest:
+  projects:
+    - name: zephyr
+      url: https://github.com/zephyrproject-rtos/zephyr
+      revision: a066b866be84785ecaa5266439ba0532a3205cc6
+      path: zephyr
+      west-commands: scripts/west-commands.yml
+      import:
+        name-allowlist:
+          - cmsis_6
+          - cmsis-dsp
+          - littlefs
+          - hal_ethos_u
+
+    - name: tflite-micro
+      url: https://github.com/zephyrproject-rtos/tflite-micro
+      revision: 8d404de73acf7687831e16d88e86e4f73cfddf8e
+      path: modules/lib/tflite-micro
+
+  self:
+    path: zephyr_srsdk
+    west-commands: scripts/west-commands.yml
