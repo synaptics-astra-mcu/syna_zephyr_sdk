@@ -1,0 +1,36 @@
+/*
+ * Copyright (c) 2026 Synaptics Incorporated
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
+/* Keep RX/TX endpoint selection DT-driven */
+/ {
+	chosen {
+		syna,i2s-rx = &i2s0;
+		syna,i2s-tx = &i2s0;
+	};
+};
+
+&i2s0 {
+	status = "okay";
+	interrupts = <65 3>;
+};
+
+&xspi {
+	partitions {
+		compatible = "fixed-partitions";
+		#address-cells = <1>;
+		#size-cells = <1>;
+
+		i2s_meta_partition: partition@800000 {
+			label = "i2s_meta";
+			reg = <0x800000 0x80000>;
+		};
+
+		storage_partition: i2s_payload_partition: partition@880000 {
+			label = "i2s_payload";
+			reg = <0x880000 0x780000>;
+		};
+	};
+};

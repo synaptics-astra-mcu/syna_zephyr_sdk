@@ -1,0 +1,17 @@
+# Copyright (c) 2026 Synaptics Incorporated
+# SPDX-License-Identifier: Apache-2.0
+
+description: |
+  Synaptics SL261x Ethernet MAC, a child node of the Ethernet controller.
+
+compatible: "syna,dwmac-sl261x"
+
+include:
+  - name: ethernet-controller.yaml
+  - name: pinctrl-device.yaml
+
+properties:
+  interrupts:
+    required: true
+  phy-handle:
+    required: true

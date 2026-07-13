@@ -1,0 +1,59 @@
+# Copyright (c) 2026 Synaptics Incorporated
+# SPDX-License-Identifier: Apache-2.0
+
+mainmenu "MIPI Capture-to-Encoder Sample"
+
+source "Kconfig.zephyr"
+
+# Tell the SR100 MIPI driver this app provides its own DT-reserved SHM pool
+# (video_capture_mem in the board overlay), so the driver's fallback buffer is not
+# compiled in.
+config VIDEO_SAMPLE_RES_FHD
+	bool
+	default y
+
+config STORE_TO_XSPI
+	bool "Store encoded quadrants to XSPI"
+	default n
+	select CRC
+	select FLASH
+	select FLASH_MAP
+	select FLASH_PAGE_LAYOUT
+	help
+	  When enabled, the sample captures one 1080p frame, encodes all four
+	  960x540 quadrants one-by-one, and stores each encoded JPEG into the
+	  XSPI flash partition labeled "jpeg_store".
+	  This partition is optional for USB-only runs (CDC streaming without XSPI).
+
+config USB_TRANSPORT_CDC_ACM
+	bool "Enable USB CDC ACM transport"
+	default n
+	select USB_DEVICE_STACK_NEXT
+	select USBD_CDC_ACM_CLASS
+	select CRC
+	select SERIAL
+	select UART_LINE_CTRL
+	select UART_INTERRUPT_DRIVEN
+	help
+	  Enable sending the encoded JPEGs to the host over USB CDC ACM.
+	  The device enumerates as a CDC-ACM UART and sends a small binary header
+	  followed by the JPEG payload for each quadrant.
+
+config USB_TRANSPORT_UVC
+	bool "Enable USB video (UVC) transport"
+	default n
+	select USB_DEVICE_STACK_NEXT
+	select USBD_VIDEO_CLASS
+	help
+	  Enable streaming the encoded quadrant JPEGs to the host as a USB
+	  Video Class (UVC) MJPEG stream.
+
+if USB_TRANSPORT_CDC_ACM || USB_TRANSPORT_UVC
+	source "samples/subsys/usb/common/Kconfig.sample_usbd"
+
+config SAMPLE_USBD_PRODUCT
+	default "Syna_USB"
+
+config SAMPLE_USBD_PID
+	default 0x0008
+endif

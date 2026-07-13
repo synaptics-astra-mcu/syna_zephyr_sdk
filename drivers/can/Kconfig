@@ -1,0 +1,24 @@
+# Copyright 2026, Synaptics Incorporated
+#
+# SPDX-License-Identifier: Apache-2.0
+
+if CAN
+
+config CAN_SYNA
+	bool "Synaptics CAN/CAN FD driver"
+	default y
+	depends on DT_HAS_SYNA_CAN_ENABLED
+	depends on CLOCK_CONTROL
+	select CAN_FD_MODE
+	select CAN_MANUAL_RECOVERY_MODE
+	select PINCTRL
+	select STATS
+	help
+	  Enable the Synaptics CAN/CAN FD controller driver.
+
+	  The driver supports the Synaptics CAN controller IP used across
+	  supported Synaptics SoCs. It exposes the standard Zephyr CAN API for
+	  classic CAN, CAN FD, loopback, listen-only, one-shot, filtering,
+	  statistics, and optional manual bus-off recovery.
+
+endif # CAN

@@ -1,0 +1,20 @@
+# Copyright (C) 2026 Synaptics Incorporated
+# Author: Jisheng Zhang <jszhang@kernel.org>
+# SPDX-License-Identifier: Apache-2.0
+
+description: |
+    Syanptics SL261X USB2 PHY.
+
+compatible: "syna,sl261x-usb2-phy"
+
+include: [phy-controller.yaml, reset-device.yaml]
+
+properties:
+  "#phy-cells":
+    const: 0
+
+  reg:
+    required: true
+
+  resets:
+    required: true

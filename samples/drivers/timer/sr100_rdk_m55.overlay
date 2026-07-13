@@ -1,0 +1,13 @@
+/ {
+	chosen {
+		zephyr,system-timer = &timer0;
+	};
+};
+
+&systick {
+	status = "disabled";
+};
+
+&timer0 {
+	status = "okay";
+};

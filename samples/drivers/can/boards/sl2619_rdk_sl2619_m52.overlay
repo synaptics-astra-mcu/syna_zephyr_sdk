@@ -1,0 +1,21 @@
+/*
+ * Copyright 2026, Synaptics Incorporated
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
+/ {
+	chosen {
+		zephyr,canbus = &can0;
+	};
+};
+
+&can0 {
+	status = "okay";
+	pinctrl-0 = <&sm_can0_tx &sm_can0_rxd>;
+	pinctrl-names = "default";
+	bitrate = <500000>;
+	bitrate-data = <2000000>;
+	sample-point = <800>;
+	sample-point-data = <800>;
+};

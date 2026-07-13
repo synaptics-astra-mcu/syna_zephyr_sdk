@@ -1,0 +1,21 @@
+# Synopsys DesignWare MAC configuration options
+
+# Copyright (c) 2021 BayLibre SAS
+# SPDX-License-Identifier: Apache-2.0
+
+menu "Synopsys DesignWare MAC driver"
+
+config ETH_DWMAC_SYNA_SL261X
+	bool "Synopsys DesignWare MAC driver for Synaptics SL261x series"
+	depends on DT_HAS_SYNA_DWMAC_SL261X_ENABLED
+	select ETH_DWMAC
+	select NOCACHE_MEMORY if ARCH_HAS_NOCACHE_MEMORY_SUPPORT
+	select PINCTRL
+	select HWINFO
+	select CRC
+	default y
+	help
+	  This enables the Synopsys DesignWare MAC driver on Synaptics SL261x
+	  series SoCs.
+
+endmenu

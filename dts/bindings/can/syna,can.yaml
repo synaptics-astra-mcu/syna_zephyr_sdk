@@ -1,0 +1,39 @@
+# Copyright 2026, Synaptics Incorporated
+#
+# SPDX-License-Identifier: Apache-2.0
+
+description: Synaptics CAN/CAN FD controller
+
+compatible: "syna,can"
+
+include: [can-fd-controller.yaml, pinctrl-device.yaml, reset-device.yaml]
+
+properties:
+  reg:
+    required: true
+
+  interrupts:
+    required: true
+
+  clocks:
+    required: true
+
+  max-filters:
+    type: int
+    default: 32
+    description: Maximum number of RX filters supported by this instance.
+
+  tx-fifo-depth:
+    type: int
+    default: 8
+    description: Number of TX descriptors used by this instance.
+
+  rx-fifo-depth:
+    type: int
+    default: 8
+    description: Number of RX descriptors used by this instance.
+
+  clock-frequency:
+    type: int
+    required: true
+    description: CAN core clock frequency in Hz.

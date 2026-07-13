@@ -1,0 +1,6 @@
+west-commands:
+  - file: scripts/west_commands/patch.py
+    commands:
+      - name: syna-patch
+        class: Patch
+        help: manage patches for Zephyr modules

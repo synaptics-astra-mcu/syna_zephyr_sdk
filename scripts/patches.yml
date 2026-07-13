@@ -1,0 +1,8 @@
+patches:
+  - path: samples/dma/zephyr-uart-dma.patch
+  - path: samples/dma/zephyr-spi-dma.patch
+  - path: samples/modules/cmsis_dsp/cmsis_dsp_helium.patch
+  - path: drivers/mbox/zephyr-mbox.patch
+  - path: drivers/ethernet/dwmac.patch
+  - path: zephyr-v4_4.patch
+  - path: samples/subsys/usb_composite_hid_dual_cdc/udc_dwc2_sr100.patch

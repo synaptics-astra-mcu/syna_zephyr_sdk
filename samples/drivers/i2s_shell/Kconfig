@@ -1,0 +1,84 @@
+mainmenu "I2S shell sample"
+
+source "Kconfig.zephyr"
+
+menu "I2S Shell Sample"
+
+config I2S_SHELL_LOG_LEVEL
+	int "I2S shell log level"
+	range 0 4
+	default 3
+	help
+	  Log level used by the I2S shell sample.
+
+
+config I2S_SHELL_PRINT_CAPTURE_INFO
+	bool "Print storage dump information after capture"
+	default y
+	help
+	  Print storage location details after a successful capture.
+
+	  The sample logs the flash offset, captured size, XIP address, and
+	  ffplay format so captured audio can be dumped from storage without
+	  running a separate locate command. Disable this option to keep
+	  runtime logs quieter.
+
+config I2S_SHELL_TARGET_ROLE
+	bool "Use I2S target clock role"
+	default n
+	help
+	  Configure the shell sample to use target/slave bit-clock and frame-clock
+	  options. Leave disabled for controller/master clock role.
+
+config I2S_SHELL_BLOCK_SIZE
+	int "I2S block size"
+	range 512 8192
+	default 4096
+	help
+	  Size of each I2S slab block used for transmit and receive streaming.
+
+config I2S_SHELL_BLOCK_COUNT
+	int "I2S slab block count"
+	range 4 64
+	default 8
+	help
+	  Number of blocks in each I2S memory slab.
+
+config I2S_SHELL_WRITE_BUFFER_COUNT
+	int "storage write buffer count"
+	range 2 256
+	default 4
+	help
+	  Number of intermediate write buffers used while streaming captured data
+	  to the storage payload partition.
+
+config I2S_SHELL_WRITE_BUFFER_BYTES
+	int "storage write buffer size"
+	range 4096 65536
+	default 8192
+	help
+	  Size of each intermediate storage write buffer.
+
+config I2S_SHELL_WORKER_STACK_SIZE
+	int "I2S shell worker stack size"
+	range 2048 16384
+	default 4096
+	help
+	  Stack size for the worker thread that runs capture and playback streams.
+
+config I2S_SHELL_WRITER_STACK_SIZE
+	int "I2S shell writer stack size"
+	range 2048 8192
+	default 2048
+	help
+	  Stack size for the background writer thread used during capture.
+
+config I2S_SHELL_WORKER_PRIORITY
+	int "I2S shell worker priority"
+	range -16 16
+	default 5
+	help
+	  Priority for the worker thread. The storage writer runs one priority level
+	  higher than this value.
+
+endmenu

@@ -1,0 +1,33 @@
+# Copyright (c) 2026 Synaptics Incorporated
+# SPDX - License - Identifier : Apache - 2.0
+
+description: Synopsys DWMAC MDIO Driver node
+
+compatible: "snps,dwmac-mdio"
+
+include:
+  - name: mdio-controller.yaml
+  - name: pinctrl-device.yaml
+
+properties:
+  csr-clock-index:
+    type: int
+    default: 1
+    description: |
+      MDIO csr reference clock speed
+      - 0: "60_100MHZ"
+      - 1: "100_150MHZ"
+      - 2: "20_35MHZ"
+      - 3: "35_60MHZ"
+      - 4: "150_250MHZ"
+      - 5: "250_300MHZ"
+      - 6: "300_500MHZ"
+      - 7: "500_800MHZ"
+      - 8: "DIV_4"
+      - 9: "DIV_6"
+      - 10: "DIV_8"
+      - 11: "DIV_10"
+      - 12: "DIV_12"
+      - 13: "DIV_14"
+      - 14: "DIV_16"
+      - 15: "DIV_18"

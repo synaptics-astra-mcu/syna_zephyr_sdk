@@ -1,0 +1,29 @@
+# Copyright (c) 2026 Synaptics Incorporated
+# SPDX-License-Identifier: Apache-2.0
+
+if SOC_SL2619_M52
+
+config ASOC
+	bool "Synaptics ASOC present"
+	default y
+	depends on SOC_SERIES_SL261X
+	help
+	  Enable Synaptics ASOC CPU present
+
+config DDR
+	bool "DDR initialization"
+	default n
+	depends on SOC_SERIES_SL261X
+	help
+	  Enable DDR initialization
+
+config CACHE_MANAGEMENT
+	default y
+
+config SYS_CLOCK_HW_CYCLES_PER_SEC
+	default $(dt_node_int_prop_int,/cpus/cpu@0,clock-frequency)
+
+config NUM_IRQS
+	default 196
+
+endif
