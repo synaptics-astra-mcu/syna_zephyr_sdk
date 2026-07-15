@@ -16,15 +16,11 @@
 #include <zephyr/kernel.h>
 #include <zephyr/logging/log.h>
 #include <zephyr/sys/barrier.h>
-#include <zephyr/sys/printk.h>
 #include <zephyr/sys/util.h>
 #include <zephyr/video/video.h>
 
 #if IS_ENABLED(CONFIG_USB_TRANSPORT_CDC_ACM)
 #include "usb_cdc_transport.h"
-#endif
-#if IS_ENABLED(CONFIG_USB_TRANSPORT_UVC)
-#include "usb_uvc_transport.h"
 #endif
 
 #if IS_ENABLED(CONFIG_STORE_TO_XSPI)
@@ -35,18 +31,8 @@
 
 LOG_MODULE_REGISTER(mipi_capture_to_enc, LOG_LEVEL_INF);
 
-#define TS_LOG(stage) LOG_INF("[TS] %s uptime_ms=%lld", stage, (long long)k_uptime_get())
-
-static inline int64_t app_elapsed_ms(int64_t start_ms)
-{
-	return k_uptime_get() - start_ms;
-}
-
 #if IS_ENABLED(CONFIG_USB_TRANSPORT_CDC_ACM)
 static struct cdc_transport_ctx cdc_ctx;
-#endif
-#if IS_ENABLED(CONFIG_USB_TRANSPORT_UVC)
-static struct uvc_transport_ctx uvc_ctx;
 #endif
 
 #define MIPI_DEV_NODE DT_NODELABEL(video_syna0)
@@ -70,8 +56,6 @@ BUILD_ASSERT(DT_NODE_HAS_PROP(MIPI_DEV_NODE, memory_region),
 	     "video_syna0 must provide a memory-region for capture");
 BUILD_ASSERT(DT_NODE_HAS_PROP(ENC_NODE, memory_region),
 	     "enc0 must provide a memory-region for encoder raw/JPEG memory");
-BUILD_ASSERT(!(IS_ENABLED(CONFIG_USB_TRANSPORT_CDC_ACM) && IS_ENABLED(CONFIG_USB_TRANSPORT_UVC)),
-	     "Select only one USB transport (CDC or UVC)");
 
 #define APP_CAPTURE_WIDTH 1920U
 #define APP_CAPTURE_HEIGHT 1080U
@@ -79,6 +63,7 @@ BUILD_ASSERT(!(IS_ENABLED(CONFIG_USB_TRANSPORT_CDC_ACM) && IS_ENABLED(CONFIG_USB
 #define APP_CAPTURE_FRAME_SIZE ((size_t)APP_CAPTURE_WIDTH * (size_t)APP_CAPTURE_HEIGHT)
 #define APP_CAPTURE_PIXEL_FORMAT VIDEO_PIX_FMT_SRGGB8
 #define APP_CAPTURE_TIMEOUT K_SECONDS(5)
+#define APP_CAPTURE_WARMUP_DELAY_MS 1000U
 
 #define APP_QUADRANT_WIDTH 960U
 #define APP_QUADRANT_HEIGHT 540U
@@ -87,7 +72,6 @@ BUILD_ASSERT(!(IS_ENABLED(CONFIG_USB_TRANSPORT_CDC_ACM) && IS_ENABLED(CONFIG_USB
 #define APP_NUM_JPEG_BUFS 1U
 #define APP_JPEG_BUF_ALIGN 64U
 #define APP_JPEG_DEQUEUE_TIMEOUT K_SECONDS(5)
-#define APP_UVC_STREAM_READY_TIMEOUT K_SECONDS(30)
 
 #define APP_MIPI_MEM_NODE DT_PHANDLE(MIPI_DEV_NODE, memory_region)
 #define APP_MIPI_MEM_BASE ((uintptr_t)DT_REG_ADDR(APP_MIPI_MEM_NODE))
@@ -585,20 +569,6 @@ static int capture_jpeg(const struct device *enc, struct video_buffer **out_buf)
 	return 0;
 }
 
-#if IS_ENABLED(CONFIG_USB_TRANSPORT_UVC)
-static int uvc_send_frame_live(const uint8_t *jpeg, size_t jpeg_len)
-{
-	int ret = uvc_transport_send_frame(&uvc_ctx, jpeg, jpeg_len);
-
-	if (ret == -EAGAIN) {
-		LOG_WRN("Dropping USB video frame because the host is behind");
-		return 0;
-	}
-
-	return ret;
-}
-#endif
-
 static size_t jpeg_find_eoi_len(const uint8_t *buf, size_t len)
 {
 	if ((buf == NULL) || (len < 2U)) {
@@ -619,59 +589,6 @@ static size_t jpeg_find_eoi_len(const uint8_t *buf, size_t len)
 
 	return 0U;
 }
-
-#if IS_ENABLED(CONFIG_USB_TRANSPORT_UVC)
-static int jpeg_insert_quadrant_com(uint8_t *buf, size_t *len_io, size_t capacity,
-				    uint8_t quadrant_id, const char *quadrant_name)
-{
-	uint8_t marker_hdr[4];
-	char payload[64];
-	size_t payload_len;
-	size_t marker_len;
-	size_t len;
-	int n;
-
-	if ((buf == NULL) || (len_io == NULL) || (capacity == 0U)) {
-		return -EINVAL;
-	}
-
-	len = *len_io;
-	if (len < 4U) {
-		return -EINVAL;
-	}
-
-	if ((buf[0] != 0xFFU) || (buf[1] != 0xD8U)) {
-		return -EINVAL;
-	}
-
-	n = snprintk(payload, sizeof(payload), "qid=%u;name=%s",
-		     (unsigned int)quadrant_id,
-		     quadrant_name != NULL ? quadrant_name : "unknown");
-	if ((n <= 0) || ((size_t)n >= sizeof(payload))) {
-		return -ENOMEM;
-	}
-
-	payload_len = (size_t)n;
-	marker_len = 4U + payload_len;
-	if ((len + marker_len) > capacity) {
-		return -ENOMEM;
-	}
-
-	memmove(&buf[2U + marker_len], &buf[2U], len - 2U);
-
-	marker_hdr[0] = 0xFFU;
-	marker_hdr[1] = 0xFEU;
-	uint16_t seg_len = (uint16_t)(payload_len + 2U);
-
-	marker_hdr[2] = (uint8_t)((seg_len >> 8) & 0xFFU);
-	marker_hdr[3] = (uint8_t)(seg_len & 0xFFU);
-	memcpy(&buf[2U], marker_hdr, sizeof(marker_hdr));
-	memcpy(&buf[2U + sizeof(marker_hdr)], payload, payload_len);
-
-	*len_io = len + marker_len;
-	return 0;
-}
-#endif
 
 int main(void)
 {
@@ -695,15 +612,9 @@ int main(void)
 	bool mipi_buffer_queued = false;
 	bool mipi_started = false;
 	bool enc_buffer_queued = false;
-	bool enc_started = false;
-	int64_t app_start_ms;
-	int64_t capture_start_ms;
-	int64_t raw_frame_ready_ms = 0;
 	int ret;
 	int final_ret = 0;
 
-	app_start_ms = k_uptime_get();
-	TS_LOG("MIPI_TO_ENC_MAIN_ENTER");
 	LOG_INF("MIPI capture-to-encoder sample start (encode 4 quadrants)");
 
 	if (!device_is_ready(mipi_dev)) {
@@ -749,7 +660,6 @@ int main(void)
 	}
 	mipi_buffer_queued = true;
 
-	capture_start_ms = k_uptime_get();
 	ret = video_stream_start(mipi_dev, VIDEO_BUF_TYPE_OUTPUT);
 	LOG_INF("mipi video_stream_start ret=%d", ret);
 	if (ret != 0) {
@@ -759,6 +669,8 @@ int main(void)
 	}
 	mipi_started = true;
 
+	k_msleep(APP_CAPTURE_WARMUP_DELAY_MS);
+
 	ret = video_dequeue(mipi_dev, &mipi_frame, APP_CAPTURE_TIMEOUT);
 	LOG_INF("mipi video_dequeue ret=%d frame=%p bytesused=%u",
 		ret, (void *)mipi_frame, mipi_frame != NULL ? (unsigned int)mipi_frame->bytesused : 0U);
@@ -767,12 +679,6 @@ int main(void)
 		final_ret = (ret != 0) ? ret : -EIO;
 		goto out_mipi_cleanup;
 	}
-	raw_frame_ready_ms = k_uptime_get();
-	TS_LOG("MIPI_TO_ENC_FIRST_RAW_FRAME_IN_RAM");
-	LOG_INF("Raw frame captured and available in RAM in %lld ms (startup total=%lld ms, bytes=%u)",
-		(long long)app_elapsed_ms(capture_start_ms),
-		(long long)app_elapsed_ms(app_start_ms),
-		(unsigned int)mipi_frame->bytesused);
 
 #if IS_ENABLED(CONFIG_USB_TRANSPORT_CDC_ACM) &&                                           \
 	!IS_ENABLED(CONFIG_STORE_TO_XSPI)
@@ -797,27 +703,6 @@ int main(void)
 		goto out_mipi_cleanup;
 	}
 	LOG_INF("Host DTR set");
-#endif
-
-#if IS_ENABLED(CONFIG_USB_TRANSPORT_UVC) &&                                               \
-	!IS_ENABLED(CONFIG_STORE_TO_XSPI)
-	ret = uvc_transport_init(&uvc_ctx, mipi_dev, APP_QUADRANT_WIDTH, APP_QUADRANT_HEIGHT,
-				 (uint32_t)APP_ENC_MAX_JPEG_SIZE);
-	if (ret != 0) {
-		LOG_ERR("USB video init failed: %d", ret);
-		final_ret = ret;
-		goto out_mipi_cleanup;
-	}
-
-	LOG_INF("USB video ready; waiting for host to start streaming...");
-	ret = uvc_transport_wait_stream_ready(&uvc_ctx, APP_UVC_STREAM_READY_TIMEOUT);
-	if (ret != 0) {
-		LOG_ERR("USB video wait stream ready failed: %d", ret);
-		final_ret = ret;
-		goto out_mipi_cleanup;
-	}
-	LOG_INF("Host started streaming");
-	k_sleep(K_MSEC(200));
 #endif
 
 #if IS_ENABLED(CONFIG_STORE_TO_XSPI)
@@ -874,146 +759,36 @@ int main(void)
 	}
 	enc_buffer_queued = true;
 
-#if IS_ENABLED(CONFIG_STORE_TO_XSPI)
-	const struct app_quadrant *q0 = &app_quadrants[0];
-	int64_t encoder_phase_start_ms = k_uptime_get();
-	int64_t quadrant_stage_start_ms = k_uptime_get();
-
-	LOG_INF("Encoding quadrant[0]=%s", q0->name);
-	ret = quadrant_copy_to_encoder(mipi_frame, q0->x_offset, q0->y_offset, q0->name);
-	if (ret != 0) {
-		final_ret = ret;
-		goto out_enc_cleanup;
-	}
-	LOG_INF("Quadrant[0] staged in encoder RAM in %lld ms",
-		(long long)app_elapsed_ms(quadrant_stage_start_ms));
-
-	ret = video_stream_start(enc, VIDEO_BUF_TYPE_OUTPUT);
-	LOG_INF("enc video_stream_start ret=%d", ret);
-	if (ret != 0) {
-		LOG_ERR("enc video_stream_start failed: %d", ret);
-		final_ret = ret;
-		goto out_enc_cleanup;
-	}
-	enc_started = true;
-
 	for (size_t i = 0; i < APP_NUM_QUADRANTS; i++) {
 		const struct app_quadrant *q = &app_quadrants[i];
 		size_t jpeg_len;
-		int64_t quadrant_encode_start_ms = k_uptime_get();
+
+		LOG_INF("Encoding quadrant[%u]=%s", (unsigned int)i, q->name);
+
+		ret = quadrant_copy_to_encoder(mipi_frame, q->x_offset, q->y_offset, q->name);
+		if (ret != 0) {
+			final_ret = ret;
+			goto out_enc_cleanup;
+		}
+
+		ret = video_stream_start(enc, VIDEO_BUF_TYPE_OUTPUT);
+		LOG_INF("enc video_stream_start ret=%d", ret);
+		if (ret != 0) {
+			LOG_ERR("enc video_stream_start failed: %d", ret);
+			final_ret = ret;
+			goto out_enc_cleanup;
+		}
 
 		ret = capture_jpeg(enc, &jpeg_out);
 		if (ret != 0) {
 			final_ret = ret;
+			(void)video_stream_stop(enc, VIDEO_BUF_TYPE_OUTPUT);
 			goto out_enc_cleanup;
 		}
 
-		jpeg_len = jpeg_find_eoi_len((const uint8_t *)jpeg_out->buffer, jpeg_out->bytesused);
-		if ((jpeg_len == 0U) || (jpeg_len > jpeg_out->bytesused)) {
-			const uint8_t *b = (const uint8_t *)jpeg_out->buffer;
-			size_t n = (size_t)jpeg_out->bytesused;
-			if ((b != NULL) && (n >= 2U)) {
-				LOG_ERR("JPEG header bytes: %02x %02x ... tail: %02x %02x",
-					b[0], b[1], b[n - 2U], b[n - 1U]);
-			}
-			LOG_ERR("JPEG EOI not found (bytesused=%u)", (unsigned int)jpeg_out->bytesused);
-			final_ret = -EIO;
-			goto out_enc_cleanup;
-		}
-
-		uint32_t crc32 = 0U;
-
-		hdr.entry[i].offset = (uint32_t)flash_write_offset;
-		hdr.entry[i].length = (uint32_t)jpeg_len;
-		LOG_INF("Quadrant[%u] encoder done in %lld ms (jpeg=%u bytes)",
-			(unsigned int)i, (long long)app_elapsed_ms(quadrant_encode_start_ms),
-			(unsigned int)jpeg_len);
-
-		int64_t quadrant_store_start_ms = k_uptime_get();
-		ret = flash_store_jpeg(fa, flash_erase_size, flash_write_offset,
-				       (const uint8_t *)jpeg_out->buffer, jpeg_len,
-				       &crc32, q->name);
-		if (ret != 0) {
-			final_ret = ret;
-			goto out_enc_cleanup;
-		}
-		LOG_INF("Quadrant[%u] stored to XSPI in %lld ms (total=%lld ms)",
-			(unsigned int)i, (long long)app_elapsed_ms(quadrant_store_start_ms),
-			(long long)app_elapsed_ms(quadrant_encode_start_ms));
-
-		hdr.entry[i].crc32 = crc32;
-		flash_write_offset += ROUND_UP(jpeg_len, flash_erase_size);
-
-		if ((i + 1U) < APP_NUM_QUADRANTS) {
-			const struct app_quadrant *next_q = &app_quadrants[i + 1U];
-			int64_t next_stage_start_ms = k_uptime_get();
-
-			LOG_INF("Encoding quadrant[%u]=%s", (unsigned int)(i + 1U), next_q->name);
-			ret = quadrant_copy_to_encoder(mipi_frame, next_q->x_offset, next_q->y_offset,
-						       next_q->name);
-			if (ret != 0) {
-				final_ret = ret;
-				goto out_enc_cleanup;
-			}
-			LOG_INF("Quadrant[%u] staged in encoder RAM in %lld ms",
-				(unsigned int)(i + 1U), (long long)app_elapsed_ms(next_stage_start_ms));
-
-			jpeg_out->bytesused = 0U;
-			mem_flush_invalidate((uintptr_t)jpeg_out->buffer, jpeg_out->size);
-			ret = video_enqueue(enc, jpeg_out);
-			if (ret != 0) {
-				LOG_ERR("enc video_enqueue recycle failed: %d", ret);
-				final_ret = ret;
-				goto out_enc_cleanup;
-			}
-		}
-		jpeg_out = NULL;
-	}
-
-	if (enc_started) {
 		ret = video_stream_stop(enc, VIDEO_BUF_TYPE_OUTPUT);
 		if (ret != 0) {
 			LOG_WRN("enc video_stream_stop failed: %d", ret);
-			if (final_ret == 0) {
-				final_ret = ret;
-			}
-		}
-		enc_started = false;
-	}
-	LOG_INF("All quadrants encoded and stored in %lld ms",
-		(long long)app_elapsed_ms(encoder_phase_start_ms));
-#else
-	const struct app_quadrant *q0 = &app_quadrants[0];
-	int64_t encoder_phase_start_ms = k_uptime_get();
-	int64_t quadrant_stage_start_ms = k_uptime_get();
-
-	LOG_INF("Encoding quadrant[0]=%s", q0->name);
-	ret = quadrant_copy_to_encoder(mipi_frame, q0->x_offset, q0->y_offset, q0->name);
-	if (ret != 0) {
-		final_ret = ret;
-		goto out_enc_cleanup;
-	}
-	LOG_INF("Quadrant[0] staged in encoder RAM in %lld ms",
-		(long long)app_elapsed_ms(quadrant_stage_start_ms));
-
-	ret = video_stream_start(enc, VIDEO_BUF_TYPE_OUTPUT);
-	LOG_INF("enc video_stream_start ret=%d", ret);
-	if (ret != 0) {
-		LOG_ERR("enc video_stream_start failed: %d", ret);
-		final_ret = ret;
-		goto out_enc_cleanup;
-	}
-	enc_started = true;
-
-	for (size_t i = 0; i < APP_NUM_QUADRANTS; i++) {
-		const struct app_quadrant *q = &app_quadrants[i];
-		size_t jpeg_len;
-		int64_t quadrant_encode_start_ms = k_uptime_get();
-
-		ret = capture_jpeg(enc, &jpeg_out);
-		if (ret != 0) {
-			final_ret = ret;
-			goto out_enc_cleanup;
 		}
 
 		jpeg_len = jpeg_find_eoi_len((const uint8_t *)jpeg_out->buffer, jpeg_out->bytesused);
@@ -1028,21 +803,6 @@ int main(void)
 			final_ret = -EIO;
 			goto out_enc_cleanup;
 		}
-		LOG_INF("Quadrant[%u] encoder done in %lld ms (jpeg=%u bytes)",
-			(unsigned int)i, (long long)app_elapsed_ms(quadrant_encode_start_ms),
-			(unsigned int)jpeg_len);
-
-#if IS_ENABLED(CONFIG_USB_TRANSPORT_UVC)
-		ret = jpeg_insert_quadrant_com((uint8_t *)jpeg_out->buffer, &jpeg_len,
-					       (size_t)jpeg_out->size, (uint8_t)i, q->name);
-		if (ret != 0) {
-			LOG_ERR("Failed to add JPEG COM metadata for quadrant[%u]: %d",
-				(unsigned int)i, ret);
-			final_ret = ret;
-			goto out_enc_cleanup;
-		}
-		mem_flush_invalidate((uintptr_t)jpeg_out->buffer, jpeg_len);
-#endif
 
 #if IS_ENABLED(CONFIG_USB_TRANSPORT_CDC_ACM) &&                                           \
 	!IS_ENABLED(CONFIG_STORE_TO_XSPI)
@@ -1054,71 +814,36 @@ int main(void)
 			goto out_enc_cleanup;
 		}
 #endif
-		if ((i + 1U) < APP_NUM_QUADRANTS) {
-			const struct app_quadrant *next_q = &app_quadrants[i + 1U];
-			int64_t next_stage_start_ms = k_uptime_get();
-#if IS_ENABLED(CONFIG_USB_TRANSPORT_UVC) &&                                               \
-	!IS_ENABLED(CONFIG_STORE_TO_XSPI)
-		ret = uvc_send_frame_live((const uint8_t *)jpeg_out->buffer, jpeg_len);
+#if IS_ENABLED(CONFIG_STORE_TO_XSPI)
+		uint32_t crc32 = 0U;
+
+		hdr.entry[i].offset = (uint32_t)flash_write_offset;
+		hdr.entry[i].length = (uint32_t)jpeg_len;
+
+		ret = flash_store_jpeg(fa, flash_erase_size, flash_write_offset,
+				       (const uint8_t *)jpeg_out->buffer, jpeg_len,
+				       &crc32, q->name);
 		if (ret != 0) {
-			LOG_ERR("USB video send quadrant[%u] failed: %d", (unsigned int)i, ret);
 			final_ret = ret;
 			goto out_enc_cleanup;
 		}
 
-		if (i == 0U) {
-			for (int resend = 0; resend < 4; resend++) {
-				k_sleep(K_MSEC(200));
-				ret = uvc_send_frame_live((const uint8_t *)jpeg_out->buffer,
-							  jpeg_len);
-				if (ret != 0) {
-					LOG_ERR("USB video resend quadrant[0] failed: %d", ret);
-					final_ret = ret;
-					goto out_enc_cleanup;
-				}
-			}
-		}
-
-		k_sleep(K_MSEC(100));
+		hdr.entry[i].crc32 = crc32;
+		/* Advance by erase-size rounding to keep each JPEG erase-block aligned. */
+		flash_write_offset += ROUND_UP(jpeg_len, flash_erase_size);
 #endif
-#if IS_ENABLED(CONFIG_STORE_TO_XSPI)
-		uint32_t crc32 = 0U;
 
-			LOG_INF("Encoding quadrant[%u]=%s", (unsigned int)(i + 1U), next_q->name);
-			ret = quadrant_copy_to_encoder(mipi_frame, next_q->x_offset, next_q->y_offset,
-						       next_q->name);
-			if (ret != 0) {
-				final_ret = ret;
-				goto out_enc_cleanup;
-			}
-			LOG_INF("Quadrant[%u] staged in encoder RAM in %lld ms",
-				(unsigned int)(i + 1U), (long long)app_elapsed_ms(next_stage_start_ms));
-
-			jpeg_out->bytesused = 0U;
-			mem_flush_invalidate((uintptr_t)jpeg_out->buffer, jpeg_out->size);
-			ret = video_enqueue(enc, jpeg_out);
-			if (ret != 0) {
-				LOG_ERR("enc video_enqueue recycle failed: %d", ret);
-				final_ret = ret;
-				goto out_enc_cleanup;
-			}
+		jpeg_out->bytesused = 0U;
+		mem_flush_invalidate((uintptr_t)jpeg_out->buffer, jpeg_out->size);
+		ret = video_enqueue(enc, jpeg_out);
+		if (ret != 0) {
+			LOG_ERR("enc video_enqueue recycle failed: %d", ret);
+			final_ret = ret;
+			goto out_enc_cleanup;
 		}
 		jpeg_out = NULL;
-	}
 
-	if (enc_started) {
-		ret = video_stream_stop(enc, VIDEO_BUF_TYPE_OUTPUT);
-		if (ret != 0) {
-			LOG_WRN("enc video_stream_stop failed: %d", ret);
-			if (final_ret == 0) {
-				final_ret = ret;
-			}
-		}
-		enc_started = false;
 	}
-	LOG_INF("All quadrants encoded in %lld ms",
-		(long long)app_elapsed_ms(encoder_phase_start_ms));
-#endif
 
 #if IS_ENABLED(CONFIG_STORE_TO_XSPI)
 	ret = flash_area_erase(fa, 0, flash_erase_size);
@@ -1219,92 +944,7 @@ int main(void)
 	goto out_mipi_cleanup;
 #endif
 
-#if IS_ENABLED(CONFIG_USB_TRANSPORT_UVC) &&                                               \
-	IS_ENABLED(CONFIG_STORE_TO_XSPI)
-	if (enc_buffer_queued) {
-		(void)video_flush(enc, true);
-		drain_buffers(enc);
-		enc_buffer_queued = false;
-	}
-
-	if (mipi_started) {
-		(void)video_stream_stop(mipi_dev, VIDEO_BUF_TYPE_OUTPUT);
-		mipi_started = false;
-	}
-
-	ret = uvc_transport_init(&uvc_ctx, mipi_dev, APP_QUADRANT_WIDTH, APP_QUADRANT_HEIGHT,
-				 (uint32_t)APP_ENC_MAX_JPEG_SIZE);
-	if (ret != 0) {
-		LOG_ERR("USB video init failed: %d", ret);
-		final_ret = ret;
-		goto out_mipi_cleanup;
-	}
-
-	LOG_INF("USB video ready; waiting for host to start streaming...");
-	ret = uvc_transport_wait_stream_ready(&uvc_ctx, APP_UVC_STREAM_READY_TIMEOUT);
-	if (ret != 0) {
-		LOG_ERR("USB video wait stream ready failed: %d", ret);
-		final_ret = ret;
-		goto out_mipi_cleanup;
-	}
-	LOG_INF("Host started streaming");
-	k_sleep(K_MSEC(200));
-
-	for (size_t i = 0; i < APP_NUM_QUADRANTS; i++) {
-		size_t len = (size_t)hdr.entry[i].length;
-		size_t off = (size_t)hdr.entry[i].offset;
-
-		if ((len == 0U) || (len == UINT32_MAX) || (off == UINT32_MAX)) {
-			LOG_ERR("Invalid XSPI header entry[%u]: off=0x%x len=0x%x",
-				(unsigned int)i, (unsigned int)off, (unsigned int)len);
-			final_ret = -EINVAL;
-			goto out_mipi_cleanup;
-		}
-
-		if (len > APP_ENC_MAX_JPEG_SIZE) {
-			LOG_ERR("XSPI entry[%u] too large: %u > %u",
-				(unsigned int)i, (unsigned int)len,
-				(unsigned int)APP_ENC_MAX_JPEG_SIZE);
-			final_ret = -ENOMEM;
-			goto out_mipi_cleanup;
-		}
-
-		ret = flash_area_read(fa, off, app_jpeg_buf_mem[0], len);
-		if (ret != 0) {
-			LOG_ERR("flash_area_read entry[%u] off=0x%x len=0x%x failed: %d",
-				(unsigned int)i, (unsigned int)off, (unsigned int)len, ret);
-			final_ret = ret;
-			goto out_mipi_cleanup;
-		}
-
-		mem_flush_invalidate((uintptr_t)app_jpeg_buf_mem[0], len);
-		ret = uvc_send_frame_live(app_jpeg_buf_mem[0], len);
-		if (ret != 0) {
-			LOG_ERR("USB video send XSPI quadrant[%u] failed: %d",
-				(unsigned int)i, ret);
-			final_ret = ret;
-			goto out_mipi_cleanup;
-		}
-
-		LOG_INF("USB video sent quadrant[%u] bytes=%u",
-			(unsigned int)i, (unsigned int)len);
-		k_sleep(K_MSEC(100));
-	}
-
-	k_sleep(K_MSEC(500));
-	LOG_INF("XSPI-to-USB video replay complete");
-	goto out_mipi_cleanup;
-#endif
-
 out_enc_cleanup:
-	if (enc_started) {
-		ret = video_stream_stop(enc, VIDEO_BUF_TYPE_OUTPUT);
-		if (ret != 0) {
-			LOG_WRN("enc video_stream_stop cleanup failed: %d", ret);
-		}
-		enc_started = false;
-	}
-
 	if (enc_buffer_queued) {
 		ret = video_flush(enc, true);
 		if (ret != 0) {
@@ -1317,10 +957,6 @@ out_enc_cleanup:
 	}
 
 out_mipi_cleanup:
-#if IS_ENABLED(CONFIG_USB_TRANSPORT_UVC)
-	(void)uvc_transport_shutdown(&uvc_ctx);
-#endif
-
 #if IS_ENABLED(CONFIG_STORE_TO_XSPI)
 	if (fa != NULL) {
 		flash_area_close(fa);
@@ -1349,9 +985,6 @@ out_mipi_cleanup:
 		return final_ret;
 	}
 
-	if (raw_frame_ready_ms != 0) {
-		LOG_INF("Sample completed in %lld ms from start", (long long)app_elapsed_ms(app_start_ms));
-	}
 	LOG_INF("MIPI capture-to-encoder sample finished");
 	return 0;
 }

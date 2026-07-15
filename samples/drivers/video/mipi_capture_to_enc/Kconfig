@@ -39,16 +39,7 @@ config USB_TRANSPORT_CDC_ACM
 	  The device enumerates as a CDC-ACM UART and sends a small binary header
 	  followed by the JPEG payload for each quadrant.
 
-config USB_TRANSPORT_UVC
-	bool "Enable USB video (UVC) transport"
-	default n
-	select USB_DEVICE_STACK_NEXT
-	select USBD_VIDEO_CLASS
-	help
-	  Enable streaming the encoded quadrant JPEGs to the host as a USB
-	  Video Class (UVC) MJPEG stream.
-
-if USB_TRANSPORT_CDC_ACM || USB_TRANSPORT_UVC
+if USB_TRANSPORT_CDC_ACM
 	source "samples/subsys/usb/common/Kconfig.sample_usbd"
 
 config SAMPLE_USBD_PRODUCT

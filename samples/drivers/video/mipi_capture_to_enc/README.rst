@@ -22,10 +22,6 @@ Two modes are supported:
   encoded quadrant JPEG to the host over a CDC ACM (virtual COM port). When
   XSPI storage is also enabled, the sample stores to XSPI first, then
   enumerates USB and streams the quadrants by reading them back from XSPI.
-* USB video stream (``CONFIG_USB_TRANSPORT_UVC=y``): enumerate as a USB Video
-  Class (UVC) device and stream the quadrants as an MJPEG stream. When XSPI
-  storage is also enabled, the sample stores to XSPI first, then streams by
-  reading them back from XSPI.
 
 Requirements
 ************
@@ -92,16 +88,6 @@ Enable USB CDC ACM streaming (no XSPI):
    :gen-args: -DCONFIG_USB_TRANSPORT_CDC_ACM=y -DEXTRA_CONF_FILE=prj_cdc.conf -DDTC_OVERLAY_FILE="boards/sr100_rdk_m55.overlay;boards/sr100_rdk_m55_cdc.overlay"
    :compact:
 
-Enable USB video streaming (no XSPI):
-
-.. zephyr-app-commands::
-   :zephyr-app: samples/drivers/video/mipi_capture_to_enc
-   :board: sr100_rdk/sr100/m55
-   :goals: build
-   :west-args: -p always
-   :gen-args: -DCONFIG_USB_TRANSPORT_UVC=y -DEXTRA_CONF_FILE=prj_uvc.conf -DDTC_OVERLAY_FILE="boards/sr100_rdk_m55.overlay;boards/sr100_rdk_m55_uvc.overlay"
-   :compact:
-
 Enable XSPI storage + USB CDC streaming (store first, then stream from XSPI):
 
 .. zephyr-app-commands::
@@ -112,15 +98,6 @@ Enable XSPI storage + USB CDC streaming (store first, then stream from XSPI):
    :gen-args: -DCONFIG_STORE_TO_XSPI=y -DCONFIG_USB_TRANSPORT_CDC_ACM=y -DEXTRA_CONF_FILE=prj_cdc.conf -DDTC_OVERLAY_FILE="boards/sr100_rdk_m55.overlay;boards/sr100_rdk_m55_cdc.overlay"
    :compact:
 
-Enable XSPI storage + USB video streaming (store first, then stream from XSPI):
-
-.. zephyr-app-commands::
-   :zephyr-app: samples/drivers/video/mipi_capture_to_enc
-   :board: sr100_rdk/sr100/m55
-   :goals: build
-   :west-args: -p always
-   :gen-args: -DCONFIG_STORE_TO_XSPI=y -DCONFIG_USB_TRANSPORT_UVC=y -DEXTRA_CONF_FILE=prj_uvc.conf -DDTC_OVERLAY_FILE="boards/sr100_rdk_m55.overlay;boards/sr100_rdk_m55_uvc.overlay"
-   :compact:
 
 Flash/run using your normal runner, then monitor the UART log.
 
@@ -262,20 +239,6 @@ When you see ``USB CDC ready; waiting for host DTR...``, attach/bind the CDC ACM
 device to your development environment (see the Windows + WSL section above),
 then run ``tools/recv_quadrants_cdc.py``. Opening the serial port asserts DTR, after
 which the device streams the four quadrants.
-
-USB Video (UVC) host script
-===========================
-
-When USB video streaming is enabled, the board enumerates as a video device
-(``/dev/video*`` on Linux). Use the script below to capture 4 MJPEG frames
-(``q0``..``q3``), show one-by-one and advance on key press:
-
-.. code-block:: console
-
-   sudo python3 samples/drivers/video/mipi_capture_to_enc/tools/recv_quadrants_uvc.py --dev /dev/video0 --show --show-mode seq --step --win-x 50 --win-y 50
-
-The script always writes ``q0.jpg``..``q3.jpg`` into ``/tmp/uvc_dumps`` by default.
-Install ``ffmpeg`` on the host if it is not already available.
 
 XSPI Dump (GDB)
 ===============
