@@ -126,7 +126,7 @@ command:
 
 .. code-block:: console
 
-   west init -m https://github.com/synaptics-astra-mcu/syna_zephyr_sdk.git --mr main  ~/syna_zephyr
+   west init -m https://github.com/synaptics-astra-mcu/syna_zephyr_sdk.git  --mr v0.97 syna_zephyr
 
 Option 2: .zip file
 
