@@ -1,0 +1,38 @@
+/*
+ * Copyright (c) 2026 Synaptics Incorporated
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
+#ifndef ZEPHYR_INCLUDE_DT_BINDINGS_RESET_SRW1500_RESET_H_
+#define ZEPHYR_INCLUDE_DT_BINDINGS_RESET_SRW1500_RESET_H_
+
+#include <zephyr/sys/util_macro.h>
+
+#define STICKY_RST0		0x00
+#define STICKY_RST1		0x04
+
+#define RST_NEXT_BIT		BIT(16)
+#define RST_NEXT_BITS_SHIFT	17
+#define RST_NEXT_BITS_MASK	0xf
+#define RST_NEXT_BITS(x)	((x) << RST_NEXT_BITS_SHIFT)
+#define RST_REG			    8
+#define RST_BIT			    0
+#define SYNA_SECURE_RST		BIT(31)
+
+#define SYNA_I2C0_RST	((STICKY_RST0 << RST_REG) | ( 8 << RST_BIT) | RST_NEXT_BIT)
+#define SYNA_I2C1_RST	((STICKY_RST0 << RST_REG) | (10 << RST_BIT) | RST_NEXT_BIT)
+#define SYNA_I3C_RST	((STICKY_RST0 << RST_REG) | (12 << RST_BIT) | RST_NEXT_BIT)
+#define SYNA_SPI0_RST	((STICKY_RST0 << RST_REG) | (20 << RST_BIT) | RST_NEXT_BIT)
+#define SYNA_SPI1_RST	((STICKY_RST0 << RST_REG) | (22 << RST_BIT) | RST_NEXT_BIT)
+#define SYNA_CAN0_RST	((STICKY_RST0 << RST_REG) | ( 2 << RST_BIT) | RST_NEXT_BIT)
+#define SYNA_CAN1_RST	((STICKY_RST0 << RST_REG) | ( 4 << RST_BIT) | RST_NEXT_BIT)
+#define SYNA_UART0_RST	((STICKY_RST0 << RST_REG) | (24 << RST_BIT) | RST_NEXT_BIT)
+#define SYNA_UART1_RST	((STICKY_RST0 << RST_REG) | (26 << RST_BIT) | RST_NEXT_BIT)
+#define SYNA_UART2_RST	((STICKY_RST0 << RST_REG) | (28 << RST_BIT) | RST_NEXT_BIT)
+#define SYNA_UART3_RST	((STICKY_RST0 << RST_REG) | (30 << RST_BIT) | RST_NEXT_BIT)
+
+#define SYNA_TRNG_RST	((STICKY_RST0 << RST_REG) | ( 4 << RST_BIT) | SYNA_SECURE_RST)
+#define SYNA_XSPI_RST	((STICKY_RST1 << RST_REG) | ( 0 << RST_BIT) | 1)
+
+#endif /* ZEPHYR_INCLUDE_DT_BINDINGS_RESET_SRW1500_RESET_H_ */

@@ -1,0 +1,31 @@
+# Copyright (c) 2026 Synaptics Incorporated
+#
+# SPDX-License-Identifier: Apache-2.0
+
+mainmenu "Bluetooth: Central BLE (SR110 RDK)"
+
+config BT_CENTRAL_BY_NAME
+	bool "Mode A: auto-connect by device name"
+	default n
+	help
+	  Auto-connect to the first device whose advertising name matches
+	  BT_TARGET_NAME. When disabled (default), use interactive Mode C.
+
+config BT_TARGET_NAME
+	string "Target BLE device name"
+	depends on BT_CENTRAL_BY_NAME
+	default "SYNA SR110"
+
+config BT_CENTRAL_BY_ADDR
+	bool "Mode B: auto-connect by MAC address"
+	default n
+	depends on !BT_CENTRAL_BY_NAME
+	help
+	  Auto-connect to the device matching BT_TARGET_ADDR.
+
+config BT_TARGET_ADDR
+	string "Target BLE device MAC address"
+	depends on BT_CENTRAL_BY_ADDR
+	default "AA:BB:CC:DD:EE:FF (random)"
+
+source "Kconfig.zephyr"

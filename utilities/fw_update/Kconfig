@@ -1,0 +1,21 @@
+# SPDX-License-Identifier: Apache-2.0
+
+config MODULE_FW_UPDATE_ENABLED
+	bool "Firmware update core"
+	depends on FLASH
+	select CRC
+	select MODULE_NVM_ENABLED
+	default n
+	help
+	  Enable the firmware update core.
+
+config FW_UPDATE_BOOT_HOOK_ENABLED
+	bool "Enable early boot FW update hook"
+	depends on MODULE_FW_UPDATE_ENABLED
+	select CODE_DATA_RELOCATION
+	select CODE_DATA_RELOCATION_SRAM
+	default y
+	help
+	  Enable the Zephyr-side early boot hook that advances STAGED updates
+	  into execution of the staged SDK image before Host API validation
+	  begins.

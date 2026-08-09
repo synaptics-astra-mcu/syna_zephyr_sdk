@@ -1,0 +1,12 @@
+# Corstone System Counter Kconfig
+
+# Copyright (c) 2026 Synaptics Incorporated
+# SPDX-License-Identifier: Apache-2.0
+
+config COUNTER_CORSTONE_SYSCOUNTER
+    bool "ARM Corstone System Counter support"
+	default y
+	depends on DT_HAS_ARM_CORSTONE_SYSCOUNTER_ENABLED
+    help
+      Enable driver for the Corstone System Counter block.
+      Provides 64-bit free-running timer base for other peripherals.

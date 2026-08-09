@@ -1,0 +1,13 @@
+diff --git a/samples/modules/cmsis_dsp/moving_average/src/main.c b/samples/modules/cmsis_dsp/moving_average/src/main.c
+index bab71912c18..15c16dbee36 100644
+--- a/samples/modules/cmsis_dsp/moving_average/src/main.c
++++ b/samples/modules/cmsis_dsp/moving_average/src/main.c
+@@ -19,7 +19,7 @@ q31_t firCoeffs[NUM_TAPS] = {0x0CCCCCCD, 0x0CCCCCCD, 0x0CCCCCCD, 0x0CCCCCCD, 0x0
+ 			     0x0CCCCCCD, 0x0CCCCCCD, 0x0CCCCCCD, 0x0CCCCCCD, 0x0CCCCCCD};
+ 
+ arm_fir_instance_q31 sFIR;
+-q31_t firState[NUM_TAPS + BLOCK_SIZE - 1];
++q31_t firState[NUM_TAPS + BLOCK_SIZE - 1 + (2 * BLOCK_SIZE)];
+ 
+ int main(void)
+ {

@@ -1,0 +1,92 @@
+# Copyright (c) 2025 Synaptics Incorporated
+# SPDX-License-Identifier: Apache-2.0
+
+description: Cadence XSPI flash controller
+
+compatible: "cdns,xspi"
+
+include: [flash-controller.yaml, pinctrl-device.yaml, reset-device.yaml]
+
+properties:
+  pinctrl-0:
+    required: false
+
+  pinctrl-names:
+    required: false
+
+  assigned-clock-rates:
+    type: int
+    required: false
+    description: |
+      The frequency of XSPI_CLK
+
+  erase-block-size:
+    type: int
+    const: 4096
+    description: Minimum erase size for (Q)SPI flashes is usually 4 KiB.
+
+  write-block-size:
+    type: int
+    const: 1
+    description: Smallest programmable unit is 1 bytes.
+
+  size:
+    type: int
+    description: Flash memory size in bits.
+
+  use-direct-mode:
+    type: boolean
+    description: Enable direct mode for read/write operations instead of STIG mode
+
+  io-mode:
+    type: string
+    default: "single"
+    enum:
+      - "single"
+      - "quad"
+      - "octa"
+    description: |
+      Select the flash IO mode used by the controller.
+
+      This property currently applies only to Macronix flashes:
+        - "single": SPI mode.
+        - "quad": Quad SPI mode.
+        - "octa": Octal SPI mode.
+
+  stig-chip-select:
+    type: int
+    default: 0
+    enum:
+      - 0
+      - 1
+    description: Chip select used by STIG and direct access command setup.
+
+  quad-read-dummy:
+    type: int
+    description: Number of dummy cycles used by quad-read direct mode.
+
+  quad-enable-command:
+    type: int
+    description: |
+      Optional command opcode used to enable quad mode directly.
+      Set to 0 to use status-register based quad enable.
+
+  quad-enable-bit:
+    type: int
+    description: |
+      Bit position of the quad-enable bit across status registers (0..15).
+      Values 0..7 select SR1, and 8..15 select SR2 bit (value - 8).
+
+  quad-read-sr1-command:
+    type: int
+    description: Status-register read command opcode for SR1.
+
+  quad-read-sr2-command:
+    type: int
+    description: |
+      Optional status-register read command opcode for SR2.
+      Set to 0 when SR2 is not required for the selected quad-enable bit.
+
+  quad-write-sr-command:
+    type: int
+    description: Status-register write command opcode used to program quad-enable bit.

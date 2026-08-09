@@ -1,0 +1,61 @@
+#
+# Copyright 2026 Synaptics Incorporated
+#
+# SPDX-License-Identifier: Apache-2.0
+#
+
+description: Synaptics SR100 digital microphone frontend
+
+compatible: "syna,sr100-dmic"
+
+include:
+  - base.yaml
+  - pinctrl-device.yaml
+  - reset-device.yaml
+
+properties:
+  reg:
+    required: true
+
+  reg-names:
+    required: true
+    const:
+      - lps
+      - global
+      - gear1
+      - lp_mem
+      - ddf0
+
+  interrupts:
+    required: true
+    description: LP Sense interrupt used for AMIN block-ready signaling.
+
+  clocks:
+    required: true
+    description: Clock controller entry used to enable the DMIC register domain.
+
+  resets:
+    required: true
+    description: Reset line for the DMIC/LP Sense register domain.
+
+  dmas:
+    type: phandle-array
+    required: true
+    description: DMA controller/channel used for AMIN ring to slab copies.
+
+  dma-names:
+    required: true
+    description: DMA name list containing "rx".
+
+  ddf-stride:
+    type: int
+    required: true
+    description: Address stride between adjacent DDF channel register blocks.
+
+  ddf-profile:
+    type: array
+    required: true
+    description: |
+      DDF register profile as offset/value pairs. Each even cell is a register
+      offset from a DDF channel base, and the following cell is the value to
+      write. The array must contain an even number of cells.

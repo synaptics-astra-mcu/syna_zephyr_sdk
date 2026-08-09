@@ -1,0 +1,382 @@
+/*
+ * Copyright (c) 2025 Synaptics Incorporated
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
+/dts-v1/;
+#include <syna/astra_sr/sr100_m55.dtsi>
+#include <syna/astra_sr/sr100_pinctrl.dtsi>
+#include <zephyr/dt-bindings/dma/syna_sr100_dma.h>
+#include <zephyr/dt-bindings/gpio/gpio.h>
+#include <zephyr/dt-bindings/input/input-event-codes.h>
+
+/ {
+	model = "Synaptics SR100 RDK board";
+	compatible = "syna,sr100-rdk";
+
+	chosen {
+		zephyr,console = &ns16550_uart1;
+		zephyr,shell-uart = &ns16550_uart1;
+		zephyr,sram = &sram0;
+		zephyr,flash = &itcm0;
+		zephyr,flash-controller = &xspi;
+		zephyr,code-partition = &itcm0;
+		zephyr,entropy = &bcm;
+	};
+
+	aliases {
+		led0 = &led0;
+		led-controller-0 = &led_controller_0;
+		dmic-dev = &dmic_dev;
+		sw0 = &user_button;
+		sdhc1 = &sdhc1;
+		dma0 = &dma0;
+	};
+
+	led_controller_0: gpio-leds {
+		compatible = "gpio-leds";
+
+		led0: led_0 {
+			gpios = <&gpio_exp0 0 GPIO_ACTIVE_HIGH>;
+			label = "LED0";
+		};
+
+		led1: led_1 {
+			gpios = <&gpio_exp0 1 GPIO_ACTIVE_HIGH>;
+			label = "LED1";
+		};
+	};
+
+	buttons: keys {
+		compatible = "gpio-keys";
+
+		user_button: user_button {
+			label = "SW8";
+			gpios = <&gpio_exp0 11 (GPIO_ACTIVE_LOW | GPIO_PULL_UP)>;
+			zephyr,code = <INPUT_KEY_0>;
+		};
+	};
+
+	vcc_sd1: regulator-vcc-sd1 {
+		compatible = "regulator-fixed";
+
+		regulator-name = "SD1 Vcc";
+		regulator-min-microvolt = <1800000>;
+		regulator-max-microvolt = <1800000>;
+
+		enable-gpios = <&gpioa 25 GPIO_ACTIVE_HIGH
+				&gpio_exp0 7 GPIO_ACTIVE_HIGH>;
+	};
+
+	vccq_sd1: regulator-vccq-sd1 {
+		compatible = "regulator-fixed";
+
+		regulator-name = "SD1 VccQ";
+		regulator-min-microvolt = <1800000>;
+		regulator-max-microvolt = <1800000>;
+	};
+
+	video_syna0: video_syna {
+		compatible = "syna,mipi-video";
+		status = "okay";
+		interrupt-parent = <&nvic>;
+		interrupts = <45 3>;
+		clocks = <&gcr SYNA_IMG_SYS_CLK>;
+
+		datapath = <1>;
+		num-lanes = <1>;
+		interface-width = <0>; /* 0=48-bit, 1=16-bit */
+
+		port {
+			video_syna0_in: endpoint {
+				remote-endpoint-label = "ov02c10_out";
+			};
+		};
+	};
+
+	ipc_memory: memory@3416f000 { /* End of LP_MEMB area */
+		compatible = "zephyr,memory-region";
+		reg = <0x3416f000 0x1000>;
+		#address-cells = <1>;
+		#size-cells = <1>;
+		ranges = <0x0 0x3416f000 0x1000>;
+		zephyr,memory-region = "IPC";
+		zephyr,memory-attr = <DT_MEM_ARM_MPU_RAM_NOCACHE>;
+	};
+
+	mbox-consumer {
+		compatible = "vnd,mbox-consumer";
+		mboxes = <&ipc0 1>, <&ipc0 0>;
+		mbox-names = "tx", "rx";
+	};
+};
+
+&ns16550_uart0 {
+	pinctrl-0 = <&uart0_tx_b &uart0_rx_b>;
+	pinctrl-names = "default";
+	current-speed = <115200>;
+	dlf = <2>;
+	status = "disabled";
+};
+
+&ns16550_uart1 {
+	pinctrl-0 = <&uart1_tx_a &uart1_rx_a>;
+	pinctrl-names = "default";
+	current-speed = <230400>;
+	dlf = <2>;
+	status = "okay";
+};
+
+&i2c1_ms_scl_b {
+	bias-pull-up;
+};
+
+&i2c1_ms_sda_b {
+	bias-pull-up;
+};
+
+&i2c1 {
+	status = "okay";
+	pinctrl-0 = <&i2c1_ms_scl_b &i2c1_ms_sda_b>;
+	pinctrl-names = "default";
+	clock-frequency = <I2C_BITRATE_STANDARD>;
+
+	gpio_exp0: pca6416@20 {
+		compatible = "nxp,pcal6416a";
+		reg = <0x20>;
+		gpio-controller;
+		#gpio-cells = <2>;
+		ngpios = <16>;
+		int-gpios = <&gpioa 3 GPIO_ACTIVE_LOW>;
+	};
+
+	ov02c10: ov02c10@36 {
+		compatible = "ovti,ov02c10";
+		reg = <0x36>;
+		status = "okay";
+
+		pinctrl-0 = <&clkout_0>;
+		pinctrl-names = "default";
+
+		/* Camera sensor power and shutdown controls. */
+		powerdown-gpios = <&gpio_exp0 8 GPIO_ACTIVE_HIGH>;
+		shutdown-gpios = <&gpio_exp0 13 GPIO_ACTIVE_HIGH>;
+
+		mclk-control-reg = <0x50330044>;
+		mclk-control-val = <0x0000000b>;
+
+		port {
+			ov02c10_out: endpoint {
+				remote-endpoint-label = "video_syna0_in";
+			};
+		};
+
+		data-lanes = <1>;
+	};
+
+	mc3479: mc3419@4c {
+		compatible = "memsic,mc3419";
+		status = "disabled";
+		reg = <0x4c>;
+		int-gpios = <&gpio_exp0 4 0>;
+		lpf-fc-sel = <0>;
+	};
+};
+
+&spi0 {
+	/* Note that the default pinmux configuration for this board uses GP23/GP24
+	 * for UART1_TX/UART1_RX respectively, which conflicts with the
+	 * spi_mstr_mosi/spi_mstr_miso muxes.
+	 */
+	pinctrl-0 = <&spi_mstr_mosi &spi_mstr_miso &spi_mstr_clk &spi_mstr_cs>;
+	pinctrl-names = "default";
+	status = "disabled";
+};
+
+&i2s0 {
+	dmas = <&dma1 DMA_SYNA_TRIG_I2S_TX>,
+	       <&dma1 DMA_SYNA_TRIG_I2S_RX>;
+	dma-names = "tx", "rx";
+};
+
+&gpioa {
+	status = "okay";
+};
+
+&gpiob {
+	status = "okay";
+};
+
+zephyr_udc0: &usb0 {
+	status = "okay";
+};
+
+&aon_event_gpio {
+	pinctrl-0 = <&aon_gpo1>;
+	pinctrl-names = "default";
+	status = "okay";
+};
+
+&gpo1 {
+	polarity = <GPIO_ACTIVE_HIGH>;
+};
+
+&wdog0 {
+	status = "okay";
+};
+
+&sdhc1 {
+	pinctrl-0 = <&sd1_cmd &sd1_clk &sd1_d0 &sd1_d1 &sd1_d2 &sd1_d3 &gpio_25>;
+	pinctrl-names = "default";
+	vmmc-supply = <&vcc_sd1>;
+	vmmcq-supply = <&vccq_sd1>;
+	max-bus-freq = <25000000>;
+	status = "okay";
+};
+
+&sd1_cmd {
+	bias-disable;
+};
+
+&sd1_clk {
+	bias-disable;
+};
+
+&sd1_d0 {
+	bias-disable;
+};
+
+&sd1_d1 {
+	bias-disable;
+};
+
+&sd1_d2 {
+	bias-disable;
+};
+
+&sd1_d3 {
+	bias-disable;
+};
+
+&xspi {
+	status = "okay";
+	pinctrl-0 = <&xspi_data0 &xspi_data1 &xspi_data2 &xspi_data3 &xspi_dqs
+		     &xspi_clk &xspi_clk_n &xspi_cs0>;
+	pinctrl-names = "default";
+	dmas = <&dma0 0>;
+	io-mode = "quad";
+	quad-enable-bit = <9>;
+	quad-read-sr2-command = <0x35>;
+
+	flash1: mt25qu02g@0 {
+		/* Gigadevice gd25lq128ewigr */
+		compatible = "micron,mt25qu02g";
+		reg = <0>;
+		size = <DT_SIZE_M(128)>; /* in bits */
+		status = "okay";
+	};
+};
+
+&xspi_data0 {
+	bias-pull-down;
+	drive-strength = <3>;
+};
+
+&xspi_data1 {
+	bias-pull-down;
+	drive-strength = <3>;
+};
+
+/*
+ * I2S pad electrical tuning for bring-up:
+ * - DI is input
+ * - DO is output-focused
+ * - FSYNC/BCLK keep input path enabled so RX target/slave can sample
+ *   external clocks in dual-board and single-board loopback validation.
+ */
+&i2s_di {
+	input-enable;
+	bias-disable;
+	drive-strength = <0>;
+	slew-rate = <1>;
+};
+
+&i2s_do {
+	input-disable;
+	bias-disable;
+	drive-strength = <0>;
+	slew-rate = <1>;
+};
+
+&i2s_fsync {
+	input-enable;
+	bias-disable;
+	drive-strength = <0>;
+	slew-rate = <1>;
+};
+
+&i2s_bclk {
+	input-enable;
+	bias-disable;
+	drive-strength = <0>;
+	slew-rate = <1>;
+};
+
+&dma0 {
+	status = "okay";
+};
+
+&dma1 {
+	status = "okay";
+	perif-channel = <0>;
+};
+
+&xspi_data2 {
+	bias-pull-down;
+	drive-strength = <3>;
+};
+
+&xspi_data3 {
+	bias-pull-down;
+	drive-strength = <3>;
+};
+
+&xspi_dqs {
+	bias-pull-down;
+	drive-strength = <3>;
+};
+
+&xspi_clk {
+	bias-pull-down;
+	drive-strength = <3>;
+};
+
+&xspi_clk_n {
+	bias-pull-down;
+	drive-strength = <3>;
+};
+
+&xspi_cs0 {
+	bias-pull-down;
+	drive-strength = <3>;
+};
+
+&hwinfo0 {
+	status = "okay";
+};
+
+&dma0 {
+	status = "okay";
+};
+
+&ipc0 {
+	status = "okay";
+	shared-memory = <&ipc_memory>;
+	shared-memory-size = <0x8>; /* 8 bytes total, 4 bytes MTU per direction */
+	#mbox-cells = <1>;
+};
+
+&bcm {
+	status = "okay";
+};

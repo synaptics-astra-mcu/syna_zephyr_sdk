@@ -1,0 +1,22 @@
+# Copyright (c) 2025 Synaptics Incorporated
+#
+# SPDX-License-Identifier: Apache-2.0
+
+source "samples/subsys/usb/common/Kconfig.sample_usbd"
+
+source "Kconfig.zephyr"
+
+config INCLUDE_REMOTE_DIR
+	bool "Include remote core header directory"
+	help
+	  Include remote build header files. Can be used if primary image
+	  needs to be aware of size or base address of secondary image
+
+config SAMPLE_HID_EVENT_DIVIDER
+	int "HID event divider for keyboard injection"
+	range 1 1000
+	default 1
+	help
+	  Emit one HID keyboard transition every N mailbox events.
+	  Set to 1 for production behavior (no decimation).
+	  Use higher values only for debug pacing.

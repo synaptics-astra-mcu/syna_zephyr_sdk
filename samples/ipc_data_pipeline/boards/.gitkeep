@@ -1,0 +1,2 @@
+# Board-specific overlays for the main application
+# The sr100_rdk boards already have mbox-consumer nodes defined in their DTS files.

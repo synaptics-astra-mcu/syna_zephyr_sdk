@@ -1,0 +1,24 @@
+# Copyright (c) 2026 Synaptics Incorporated
+# SPDX-License-Identifier: Apache-2.0
+
+title: Synaptics SRW1500 Reset Driver
+
+description: |
+  Synaptics SRW1500 Reset driver bindings.
+
+include: [base.yaml, reset-controller.yaml]
+
+compatible: "syna,srw1500-reset"
+
+properties:
+  reg:
+    required: true
+
+  reg-names:
+    required: true
+
+  "#reset-cells":
+    const: 1
+
+reset-cells:
+- id

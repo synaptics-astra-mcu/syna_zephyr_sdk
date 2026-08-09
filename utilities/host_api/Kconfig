@@ -1,0 +1,135 @@
+# SPDX-License-Identifier: Apache-2.0
+
+config SERVICE_HOST_API_ENABLED
+	bool "Host API core"
+	default n
+	help
+	  Enable the Host API core.
+
+config SERVICE_USB_HOST_API_ENABLED
+	bool "USB CDC transport"
+	depends on SERVICE_HOST_API_ENABLED
+	depends on SERIAL
+	depends on USB_DEVICE_STACK_NEXT && USBD_CDC_ACM_CLASS
+	default n
+	help
+	  Enable the USB CDC transport for Host API.
+
+config HOST_API_AUTO_START
+	bool "Auto-start Host API and enabled services"
+	depends on SERVICE_HOST_API_ENABLED
+	default y
+	help
+	  Start the Host API transport/bootstrap path and enabled Host API
+	  services automatically during application initialization.
+
+if SERVICE_USB_HOST_API_ENABLED
+
+config HOST_API_USB_MANUFACTURER
+	string "Host API USB manufacturer string"
+	default "Synaptics Incorporated"
+	help
+	  USB manufacturer string used when Host API USB transport is enabled.
+
+config HOST_API_USB_VID
+	hex "Host API USB vendor ID"
+	default 0xCAFE
+	help
+	  USB vendor ID used for the Host API USB device.
+
+config HOST_API_USB_PID
+	hex "Host API USB product ID"
+	default 0x4002
+	help
+	  USB product ID used for the Host API USB device.
+
+config HOST_API_USB_SELF_POWERED
+	bool "Host API USB self-powered attribute"
+	default y
+	help
+	  Set the USB self-powered attribute for the Host API USB device.
+
+config HOST_API_USB_REMOTE_WAKEUP
+	bool "Host API USB remote wakeup attribute"
+	default n
+	help
+	  Set the USB remote wakeup attribute for the Host API USB device.
+
+config HOST_API_USB_MAX_POWER
+	int "Host API USB bMaxPower value"
+	default 125
+	range 0 250
+	help
+	  bMaxPower value in 2 mA units for the Host API USB device.
+
+endif
+
+choice
+	prompt "Active communication interface"
+	default ACTIVE_INTERFACE_USB if SERVICE_USB_HOST_API_ENABLED
+	depends on SERVICE_HOST_API_ENABLED
+	help
+	  Select the active communication interface for Host API.
+
+config ACTIVE_INTERFACE_UART
+	bool "UART"
+	help
+	  Reserve UART as a Host API active interface ID.
+
+config ACTIVE_INTERFACE_USB
+	bool "USB CDC"
+	depends on SERVICE_USB_HOST_API_ENABLED
+	help
+	  Use USB CDC as the Host API active interface.
+
+config ACTIVE_INTERFACE_I2C
+	bool "I2C"
+	help
+	  Reserve I2C as a Host API active interface ID.
+
+config ACTIVE_INTERFACE_SPI
+	bool "SPI"
+	help
+	  Reserve SPI as a Host API active interface ID.
+
+config ACTIVE_INTERFACE_LAST
+	bool "Invalid interface"
+	help
+	  Use an invalid Host API active interface ID.
+
+endchoice
+
+config HOST_API_ACTIVE_INTERFACE
+	int
+	default 0 if ACTIVE_INTERFACE_UART
+	default 1 if ACTIVE_INTERFACE_USB
+	default 2 if ACTIVE_INTERFACE_I2C
+	default 3 if ACTIVE_INTERFACE_SPI
+	default 4 if ACTIVE_INTERFACE_LAST
+
+config HOST_API_THREAD_STACK_SIZE
+	int "Host API thread stack size"
+	depends on SERVICE_HOST_API_ENABLED
+	default 4096
+
+config HOST_API_TASK_PRIORITY
+	int "Host API thread priority"
+	depends on SERVICE_HOST_API_ENABLED
+	default 5
+
+config HOST_API_SDK_VER_MAJOR
+	int "SDK version major"
+	depends on SERVICE_HOST_API_ENABLED
+	default 0
+
+config HOST_API_SDK_VER_MINOR
+	int "SDK version minor"
+	depends on SERVICE_HOST_API_ENABLED
+	default 9
+
+config HOST_API_SDK_VER_REVISION
+	int "SDK version revision"
+	depends on SERVICE_HOST_API_ENABLED
+	default 7
+
+rsource "services/Kconfig"

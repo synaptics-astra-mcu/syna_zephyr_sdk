@@ -1,0 +1,31 @@
+sample:
+  name: Synaptics USB HID keyboard & CDC-ACM composite sample
+
+common:
+  filter: dt_alias_exists("sw0") and dt_alias_exists("led0")
+  depends_on:
+    - usbd
+    - gpio
+  tags:
+    - usb
+    - syna
+  timeout: 15
+  harness: console
+  harness_config:
+    type: one_line
+    regex:
+      - "HID keyboard sample is initialized"
+
+tests:
+  sample.syna.usbd.hid-keyboard: {}
+  sample.syna.usbd.hid-keyboard.out-report:
+    extra_args:
+      - EXTRA_DTC_OVERLAY_FILE="out_report.overlay"
+  sample.syna.usbd.hid-keyboard.large-report:
+    extra_args:
+      - EXTRA_DTC_OVERLAY_FILE="large_in_report.overlay"
+  sample.syna.usbd.hid-keyboard.large-out-report:
+    extra_args:
+      - EXTRA_DTC_OVERLAY_FILE="large_out_report.overlay"
+    extra_configs:
+      - CONFIG_USBD_HID_SET_POLLING_PERIOD=y

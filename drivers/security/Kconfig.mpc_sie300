@@ -1,0 +1,8 @@
+# Copyright (c) 2026 Synaptics Incorporated
+# SPDX-License-Identifier: Apache-2.0
+
+config ARM_MPC_SIE300
+	bool "Arm MPC SIE-300 memory protection controller"
+	depends on ARM
+	help
+	  Generic driver for Arm SIE-300 style MPC instances.

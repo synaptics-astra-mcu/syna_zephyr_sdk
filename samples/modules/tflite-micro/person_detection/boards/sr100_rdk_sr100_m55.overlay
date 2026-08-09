@@ -1,0 +1,7 @@
+/* This forces the driver to pass NULL for fast-memory and lets
+ * the model use system RAM for activations.
+ */
+
+&ethosu0 {
+    /delete-property/ fast-memory-region;
+};

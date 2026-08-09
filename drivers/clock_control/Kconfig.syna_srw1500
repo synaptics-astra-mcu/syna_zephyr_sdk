@@ -1,0 +1,9 @@
+# Copyright (c) 2026 Synaptics Incorporated
+# SPDX-License-Identifier: Apache-2.0
+
+config CLOCK_CONTROL_SYNA_SRW1500
+	bool "Synaptics SRW1500 Clock Control Driver"
+	default y
+	depends on DT_HAS_SYNA_SRW1500_CLOCK_ENABLED
+	help
+	  Enable clock control support for the Synaptics SRW1500 SoC.

@@ -1,0 +1,13 @@
+# Copyright 2026, Synaptics Incorporated
+#
+# SPDX-License-Identifier: Apache-2.0
+
+menu "CAN Sample App"
+
+config SAMPLE_SYNA_CAN_VERBOSE_LOGS
+	bool "Verbose test logging"
+	default n
+
+endmenu
+
+source "Kconfig.zephyr"

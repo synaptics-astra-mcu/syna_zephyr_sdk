@@ -1,0 +1,57 @@
+/*
+ * SR100 RDK M55 DMIC shell route, I2S playback route, and XSPI storage.
+ */
+
+/ {
+	aliases {
+		dmic-0 = &dmic_dev;
+	};
+
+	chosen {
+		syna,i2s-tx = &i2s0;
+	};
+};
+
+&dmic_dev {
+	pinctrl-0 = <&dm0_data_c &dm0_clk_c>;
+	pinctrl-names = "default";
+	dmas = <&dma0 1>;
+	dma-names = "rx";
+	status = "okay";
+};
+
+&dm0_data_c {
+	input-enable;
+	bias-disable;
+	drive-strength = <0>;
+	slew-rate = <1>;
+};
+
+&dm0_clk_c {
+	bias-disable;
+	drive-strength = <0>;
+	slew-rate = <1>;
+};
+
+&i2s0 {
+	status = "okay";
+	interrupts = <65 3>;
+};
+
+&xspi {
+	partitions {
+		compatible = "fixed-partitions";
+		#address-cells = <1>;
+		#size-cells = <1>;
+
+		dmic_storage_partition: partition@800000 {
+			label = "dmic_meta";
+			reg = <0x800000 0x80000>;
+		};
+
+		storage_partition: dmic_payload_partition: partition@880000 {
+			label = "dmic_payload";
+			reg = <0x880000 0x780000>;
+		};
+	};
+};

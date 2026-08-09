@@ -1,0 +1,21 @@
+sample:
+  name: IPC Data Pipeline sample
+common:
+  tags: mbox ipc
+  timeout: 30
+tests:
+  sample.drivers.ipc_data_pipeline:
+    filter: dt_compat_enabled("vnd,mbox-consumer")
+    platform_allow:
+      - sr100_rdk/sr100/m55
+      - sr100_rdk/sr100/m4
+    integration_platforms:
+      - sr100_rdk/sr100/m55
+    harness: console
+    harness_config:
+      type: multi_line
+      ordered: false
+      regex:
+        - "Client send \\(on channel.*\\) value:.*"
+        - "Server receive \\(on channel.*\\) value:.*"
+        - "mbox_data Client demo ended"

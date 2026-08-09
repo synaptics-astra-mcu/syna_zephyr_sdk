@@ -1,0 +1,620 @@
+/*
+ * Copyright (c) 2026 Synaptics Incorporated
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
+/* /dts-v1/; */
+#include <zephyr/dt-bindings/pinctrl/syna-srw1500-pinctrl.h>
+
+&pinctrl_gbl {
+	/omit-if-no-ref/ GPIO_0__GPIO30: GPIO_0__GPIO30 {
+		pinmux = <SRW1500_GBL_PINMUX(30, 11, 0)>;
+	};
+
+	/omit-if-no-ref/ GPIO_0__CAP2: GPIO_0__CAP2 {
+		pinmux = <SRW1500_GBL_PINMUX(30, 11, 1)>;
+	};
+
+	/omit-if-no-ref/ GPIO_0__SPI_MSTR_CS1: GPIO_0__SPI_MSTR_CS1 {
+		pinmux = <SRW1500_GBL_PINMUX(30, 11, 2)>;
+	};
+
+	/omit-if-no-ref/ GPIO_0__PWM2: GPIO_0__PWM2 {
+		pinmux = <SRW1500_GBL_PINMUX(30, 11, 3)>;
+	};
+
+	/omit-if-no-ref/ GPIO_0__DM0_DATA: GPIO_0__DM0_DATA {
+		pinmux = <SRW1500_GBL_PINMUX(30, 11, 4)>;
+	};
+
+	/omit-if-no-ref/ GPIO_0__URT2_RTS: GPIO_0__URT2_RTS {
+		pinmux = <SRW1500_GBL_PINMUX(30, 11, 5)>;
+	};
+
+	/omit-if-no-ref/ GPIO_0__I2S_SD: GPIO_0__I2S_SD {
+		pinmux = <SRW1500_GBL_PINMUX(30, 11, 6)>;
+	};
+
+	/omit-if-no-ref/ GPIO_1__GPIO31: GPIO_1__GPIO31 {
+		pinmux = <SRW1500_GBL_PINMUX(31, 11, 0)>;
+	};
+
+	/omit-if-no-ref/ GPIO_1__SPI_MSTR_CS2: GPIO_1__SPI_MSTR_CS2 {
+		pinmux = <SRW1500_GBL_PINMUX(31, 11, 2)>;
+	};
+
+	/omit-if-no-ref/ GPIO_1__PWM3: GPIO_1__PWM3 {
+		pinmux = <SRW1500_GBL_PINMUX(31, 11, 3)>;
+	};
+
+	/omit-if-no-ref/ GPIO_1__DM0_CLK: GPIO_1__DM0_CLK {
+		pinmux = <SRW1500_GBL_PINMUX(31, 11, 4)>;
+	};
+
+	/omit-if-no-ref/ GPIO_1__URT2_CTS: GPIO_1__URT2_CTS {
+		pinmux = <SRW1500_GBL_PINMUX(31, 11, 5)>;
+	};
+
+	/omit-if-no-ref/ GPIO_1__I2S_SCLK: GPIO_1__I2S_SCLK {
+		pinmux = <SRW1500_GBL_PINMUX(31, 11, 6)>;
+	};
+
+	/omit-if-no-ref/ GPIO_2__GPIO22: GPIO_2__GPIO22 {
+		pinmux = <SRW1500_GBL_PINMUX(22, 11, 0)>;
+	};
+
+	/omit-if-no-ref/ GPIO_2__SPI_MSTR_MOSI: GPIO_2__SPI_MSTR_MOSI {
+		pinmux = <SRW1500_GBL_PINMUX(22, 11, 1)>;
+	};
+
+	/omit-if-no-ref/ GPIO_2__UART0_RTS: GPIO_2__UART0_RTS {
+		pinmux = <SRW1500_GBL_PINMUX(22, 11, 2)>;
+	};
+
+	/omit-if-no-ref/ GPIO_2__UART1_TX: GPIO_2__UART1_TX {
+		pinmux = <SRW1500_GBL_PINMUX(22, 11, 3)>;
+	};
+
+	/omit-if-no-ref/ GPIO_2__I2C_MST_SCL: GPIO_2__I2C_MST_SCL {
+		pinmux = <SRW1500_GBL_PINMUX(22, 11, 4)>;
+	};
+
+	/omit-if-no-ref/ GPIO_2__I2S_SD: GPIO_2__I2S_SD {
+		pinmux = <SRW1500_GBL_PINMUX(22, 11, 6)>;
+	};
+
+	/omit-if-no-ref/ GPIO_3__GPIO23: GPIO_3__GPIO23 {
+		pinmux = <SRW1500_GBL_PINMUX(23, 11, 0)>;
+	};
+
+	/omit-if-no-ref/ GPIO_3__SPI_MSTR_CLK: GPIO_3__SPI_MSTR_CLK {
+		pinmux = <SRW1500_GBL_PINMUX(23, 11, 1)>;
+	};
+
+	/omit-if-no-ref/ GPIO_3__UART0_TX: GPIO_3__UART0_TX {
+		pinmux = <SRW1500_GBL_PINMUX(23, 11, 2)>;
+	};
+
+	/omit-if-no-ref/ GPIO_3__UART1_RTS: GPIO_3__UART1_RTS {
+		pinmux = <SRW1500_GBL_PINMUX(23, 11, 3)>;
+	};
+
+	/omit-if-no-ref/ GPIO_3__PWM0: GPIO_3__PWM0 {
+		pinmux = <SRW1500_GBL_PINMUX(23, 11, 4)>;
+	};
+
+	/omit-if-no-ref/ GPIO_3__I2S_SCLK: GPIO_3__I2S_SCLK {
+		pinmux = <SRW1500_GBL_PINMUX(23, 11, 6)>;
+	};
+
+	/omit-if-no-ref/ GPIO_4__GPIO24: GPIO_4__GPIO24 {
+		pinmux = <SRW1500_GBL_PINMUX(24, 11, 0)>;
+	};
+
+	/omit-if-no-ref/ GPIO_4__SPI_MSTR_CS: GPIO_4__SPI_MSTR_CS {
+		pinmux = <SRW1500_GBL_PINMUX(24, 11, 1)>;
+	};
+
+	/omit-if-no-ref/ GPIO_4__UART0_RX: GPIO_4__UART0_RX {
+		pinmux = <SRW1500_GBL_PINMUX(24, 11, 2)>;
+	};
+
+	/omit-if-no-ref/ GPIO_4__UART1_CTS: GPIO_4__UART1_CTS {
+		pinmux = <SRW1500_GBL_PINMUX(24, 11, 3)>;
+	};
+
+	/omit-if-no-ref/ GPIO_4__PWM1: GPIO_4__PWM1 {
+		pinmux = <SRW1500_GBL_PINMUX(24, 11, 4)>;
+	};
+
+	/omit-if-no-ref/ GPIO_4__I2S_WS: GPIO_4__I2S_WS {
+		pinmux = <SRW1500_GBL_PINMUX(24, 11, 6)>;
+	};
+
+	/omit-if-no-ref/ GPIO_5__GPIO25: GPIO_5__GPIO25 {
+		pinmux = <SRW1500_GBL_PINMUX(25, 11, 0)>;
+	};
+
+	/omit-if-no-ref/ GPIO_5__SPI_MSTR_MISO: GPIO_5__SPI_MSTR_MISO {
+		pinmux = <SRW1500_GBL_PINMUX(25, 11, 1)>;
+	};
+
+	/omit-if-no-ref/ GPIO_5__UART0_CTS: GPIO_5__UART0_CTS {
+		pinmux = <SRW1500_GBL_PINMUX(25, 11, 2)>;
+	};
+
+	/omit-if-no-ref/ GPIO_5__UART1_RX: GPIO_5__UART1_RX {
+		pinmux = <SRW1500_GBL_PINMUX(25, 11, 3)>;
+	};
+
+	/omit-if-no-ref/ GPIO_5__I2C_MST_SDA: GPIO_5__I2C_MST_SDA {
+		pinmux = <SRW1500_GBL_PINMUX(25, 11, 4)>;
+	};
+
+	/omit-if-no-ref/ GPIO_5__PWM4: GPIO_5__PWM4 {
+		pinmux = <SRW1500_GBL_PINMUX(25, 11, 5)>;
+	};
+
+	/omit-if-no-ref/ GPIO_5__PDM_MUTE: GPIO_5__PDM_MUTE {
+		pinmux = <SRW1500_GBL_PINMUX(25, 11, 6)>;
+	};
+
+	/omit-if-no-ref/ GPIO_6__GPIO28: GPIO_6__GPIO28 {
+		pinmux = <SRW1500_GBL_PINMUX(28, 11, 0)>;
+	};
+
+	/omit-if-no-ref/ GPIO_6__I2C_MST_SDA: GPIO_6__I2C_MST_SDA {
+		pinmux = <SRW1500_GBL_PINMUX(28, 11, 1)>;
+	};
+
+	/omit-if-no-ref/ GPIO_6__I2C_SLV_SDA: GPIO_6__I2C_SLV_SDA {
+		pinmux = <SRW1500_GBL_PINMUX(28, 11, 2)>;
+	};
+
+	/omit-if-no-ref/ GPIO_6__UART2_TX: GPIO_6__UART2_TX {
+		pinmux = <SRW1500_GBL_PINMUX(28, 11, 5)>;
+	};
+
+	/omit-if-no-ref/ GPIO_7__GPIO29: GPIO_7__GPIO29 {
+		pinmux = <SRW1500_GBL_PINMUX(29, 11, 0)>;
+	};
+
+	/omit-if-no-ref/ GPIO_7__I2C_MST_SCL: GPIO_7__I2C_MST_SCL {
+		pinmux = <SRW1500_GBL_PINMUX(29, 11, 1)>;
+	};
+
+	/omit-if-no-ref/ GPIO_7__I2C_SLV_SCL: GPIO_7__I2C_SLV_SCL {
+		pinmux = <SRW1500_GBL_PINMUX(29, 11, 2)>;
+	};
+
+	/omit-if-no-ref/ GPIO_7__UART2_RX: GPIO_7__UART2_RX {
+		pinmux = <SRW1500_GBL_PINMUX(29, 11, 5)>;
+	};
+
+	/omit-if-no-ref/ BT_CLK_REQ__XSPI_CS0: BT_CLK_REQ__XSPI_CS0 {
+		pinmux = <SRW1500_GBL_PINMUX(9, 11, 0)>;
+		input-disable;
+	};
+
+	/omit-if-no-ref/ BT_CLK_REQ__GPIO_9: BT_CLK_REQ__GPIO_9 {
+		pinmux = <SRW1500_GBL_PINMUX(9, 11, 1)>;
+	};
+
+	/omit-if-no-ref/ BT_DEV_WAKE__XSPI_CS1: BT_DEV_WAKE__XSPI_CS1 {
+		pinmux = <SRW1500_GBL_PINMUX(10, 11, 0)>;
+		input-disable;
+	};
+
+	/omit-if-no-ref/ BT_DEV_WAKE__GPIO10: BT_DEV_WAKE__GPIO10 {
+		pinmux = <SRW1500_GBL_PINMUX(10, 11, 1)>;
+	};
+
+	/omit-if-no-ref/ BT_HOST_WAKE__XSPI_DQS: BT_HOST_WAKE__XSPI_DQS {
+		pinmux = <SRW1500_GBL_PINMUX(0, 11, 0)>;
+		input-enable;
+	};
+
+	/omit-if-no-ref/ BT_HOST_WAKE__GPIO0: BT_HOST_WAKE__GPIO8 {
+		pinmux = <SRW1500_GBL_PINMUX(0, 11, 1)>;
+	};
+
+	/omit-if-no-ref/ BT_I2S_CLK__XSPI_DATA3: BT_I2S_CLK__XSPI_DATA3 {
+		pinmux = <SRW1500_GBL_PINMUX(4, 11, 0)>;
+		input-enable;
+	};
+
+	/omit-if-no-ref/ BT_I2S_CLK__GPIO4: BT_I2S_CLK__GPIO4 {
+		pinmux = <SRW1500_GBL_PINMUX(4, 11, 1)>;
+	};
+
+	/omit-if-no-ref/ BT_I2S_DI__XSPI_DATA0: BT_I2S_DI__XSPI_DATA0 {
+		pinmux = <SRW1500_GBL_PINMUX(1, 11, 0)>;
+		input-enable;
+	};
+
+	/omit-if-no-ref/ BT_I2S_DI__GPIO1: BT_I2S_DI__GPIO1 {
+		pinmux = <SRW1500_GBL_PINMUX(1, 11, 1)>;
+	};
+
+	/omit-if-no-ref/ BT_I2S_DO__XSPI_DATA2: BT_I2S_DO__XSPI_DATA2 {
+		pinmux = <SRW1500_GBL_PINMUX(3, 11, 0)>;
+		input-enable;
+	};
+
+	/omit-if-no-ref/ BT_I2S_DO__GPIO3: BT_I2S_DO__GPIO3 {
+		pinmux = <SRW1500_GBL_PINMUX(3, 11, 1)>;
+	};
+
+	/omit-if-no-ref/ BT_I2S_WS__XSPI_DATA1: BT_I2S_WS__XSPI_DATA1 {
+		pinmux = <SRW1500_GBL_PINMUX(2, 11, 0)>;
+		input-enable;
+	};
+
+	/omit-if-no-ref/ BT_I2S_WS__GPIO2: BT_I2S_WS__GPIO2 {
+		pinmux = <SRW1500_GBL_PINMUX(2, 11, 1)>;
+	};
+
+	/omit-if-no-ref/ BT_UART_CTS_N__XSPI_DATA7: BT_UART_CTS_N__XSPI_DATA7 {
+		pinmux = <SRW1500_GBL_PINMUX(8, 11, 0)>;
+		input-enable;
+	};
+
+	/omit-if-no-ref/ BT_UART_CTS_N__GPIO8: BT_UART_CTS_N__GPIO8 {
+		pinmux = <SRW1500_GBL_PINMUX(8, 11, 1)>;
+	};
+
+	/omit-if-no-ref/ BT_UART_CTS_N__UART0_CTS: BT_UART_CTS_N__UART0_CTS {
+		pinmux = <SRW1500_GBL_PINMUX(8, 11, 2)>;
+	};
+
+	/omit-if-no-ref/ SDIO_CLK__GPIO14: SDIO_CLK__GPIO14 {
+		pinmux = <SRW1500_GBL_PINMUX(14, 11, 0)>;
+	};
+
+	/omit-if-no-ref/ SDIO_CLK__UART1_TX: SDIO_CLK__UART1_TX {
+		pinmux = <SRW1500_GBL_PINMUX(14, 11, 2)>;
+	};
+
+	/omit-if-no-ref/ SDIO_CLK__I2C_SLV_SDA: SDIO_CLK__I2C_SLV_SDA {
+		pinmux = <SRW1500_GBL_PINMUX(14, 11, 4)>;
+	};
+
+	/omit-if-no-ref/ SDIO_CLK__SPI_SLV_MISO: SDIO_CLK__SPI_SLV_MISO {
+		pinmux = <SRW1500_GBL_PINMUX(14, 11, 5)>;
+	};
+
+	/omit-if-no-ref/ SDIO_CLK__UART0_CTS: SDIO_CLK__UART0_CTS {
+		pinmux = <SRW1500_GBL_PINMUX(14, 11, 6)>;
+	};
+
+	/omit-if-no-ref/ SDIO_CMD__GPIO15: SDIO_CMD__GPIO15 {
+		pinmux = <SRW1500_GBL_PINMUX(15, 11, 0)>;
+	};
+
+	/omit-if-no-ref/ SDIO_CMD__UART1_CTS: SDIO_CMD__UART1_CTS {
+		pinmux = <SRW1500_GBL_PINMUX(15, 11, 2)>;
+	};
+
+	/omit-if-no-ref/ SDIO_CMD__DM0_DATA: SDIO_CMD__DM0_DATA {
+		pinmux = <SRW1500_GBL_PINMUX(15, 11, 3)>;
+	};
+
+	/omit-if-no-ref/ SDIO_CMD__SPI_SLV_MOSI: SDIO_CMD__SPI_SLV_MOSI {
+		pinmux = <SRW1500_GBL_PINMUX(15, 11, 5)>;
+	};
+
+	/omit-if-no-ref/ SDIO_CMD__UART0_TX: SDIO_CMD__UART0_TX {
+		pinmux = <SRW1500_GBL_PINMUX(15, 11, 6)>;
+	};
+
+	/omit-if-no-ref/ SDIO_DATA_0__GPIO16: SDIO_DATA_0__GPIO16 {
+		pinmux = <SRW1500_GBL_PINMUX(16, 11, 0)>;
+	};
+
+	/omit-if-no-ref/ SDIO_DATA_0__UART1_RTS: SDIO_DATA_0__UART1_RTS {
+		pinmux = <SRW1500_GBL_PINMUX(16, 11, 2)>;
+	};
+
+	/omit-if-no-ref/ SDIO_DATA_0__DM0_CLK: SDIO_DATA_0__DM0_CLK {
+		pinmux = <SRW1500_GBL_PINMUX(16, 11, 3)>;
+	};
+
+	/omit-if-no-ref/ SDIO_DATA_0__SPI_SLV_CLK: SDIO_DATA_0__SPI_SLV_CLK {
+		pinmux = <SRW1500_GBL_PINMUX(16, 11, 5)>;
+	};
+
+	/omit-if-no-ref/ SDIO_DATA_0__UART0_RX: SDIO_DATA_0__UART0_RX {
+		pinmux = <SRW1500_GBL_PINMUX(16, 11, 6)>;
+		input-enable;
+	};
+
+	/omit-if-no-ref/ SDIO_DATA_1__GPIO17: SDIO_DATA_1__GPIO17 {
+		pinmux = <SRW1500_GBL_PINMUX(17, 11, 0)>;
+	};
+
+	/omit-if-no-ref/ SDIO_DATA_1__UART1_RX: SDIO_DATA_1__UART1_RX {
+		pinmux = <SRW1500_GBL_PINMUX(17, 11, 2)>;
+	};
+
+	/omit-if-no-ref/ SDIO_DATA_1__I2C_SLV_SCL: SDIO_DATA_1__I2C_SLV_SCL {
+		pinmux = <SRW1500_GBL_PINMUX(17, 11, 4)>;
+	};
+
+	/omit-if-no-ref/ SDIO_DATA_1__SPI_SLV_CS: SDIO_DATA_1__SPI_SLV_CS {
+		pinmux = <SRW1500_GBL_PINMUX(17, 11, 5)>;
+	};
+
+	/omit-if-no-ref/ SDIO_DATA_1__UART0_RTS: SDIO_DATA_1__UART0_RTS {
+		pinmux = <SRW1500_GBL_PINMUX(17, 11, 6)>;
+	};
+
+	/omit-if-no-ref/ SDIO_DATA_2__GPIO18: SDIO_DATA_2__GPIO18 {
+		pinmux = <SRW1500_GBL_PINMUX(18, 11, 0)>;
+	};
+
+	/omit-if-no-ref/ SDIO_DATA_2__UART2_TX: SDIO_DATA_2__UART2_TX {
+		pinmux = <SRW1500_GBL_PINMUX(18, 11, 3)>;
+	};
+
+	/omit-if-no-ref/ SDIO_DATA_2__CAP0: SDIO_DATA_2__CAP0 {
+		pinmux = <SRW1500_GBL_PINMUX(18, 11, 5)>;
+	};
+
+	/omit-if-no-ref/ SDIO_DATA_2__I2S_SDO: SDIO_DATA_2__I2S_SDO {
+		pinmux = <SRW1500_GBL_PINMUX(18, 11, 6)>;
+	};
+
+	/omit-if-no-ref/ SDIO_DATA_3__GPIO19: SDIO_DATA_3__GPIO19 {
+		pinmux = <SRW1500_GBL_PINMUX(19, 11, 0)>;
+	};
+
+	/omit-if-no-ref/ SDIO_DATA_3__UART2_RX: SDIO_DATA_3__UART2_RX {
+		pinmux = <SRW1500_GBL_PINMUX(19, 11, 3)>;
+	};
+
+	/omit-if-no-ref/ SDIO_DATA_3__CAP1: SDIO_DATA_3__CAP1 {
+		pinmux = <SRW1500_GBL_PINMUX(19, 11, 5)>;
+	};
+
+	/omit-if-no-ref/ BT_UART_RTS_N__XSPI_DATA6: BT_UART_RTS_N__XSPI_DATA6 {
+		pinmux = <SRW1500_GBL_PINMUX(7, 11, 0)>;
+		input-enable;
+	};
+
+	/omit-if-no-ref/ BT_UART_RTS_N__GPIO7: BT_UART_RTS_N__GPIO7 {
+		pinmux = <SRW1500_GBL_PINMUX(7, 11, 1)>;
+	};
+
+	/omit-if-no-ref/ BT_UART_RTS_N__UART0_RTS: BT_UART_RTS_N__UART0_RTS {
+		pinmux = <SRW1500_GBL_PINMUX(7, 11, 2)>;
+	};
+
+	/omit-if-no-ref/ BT_UART_RXD__XSPI_DATA4: BT_UART_RXD__XSPI_DATA4 {
+		pinmux = <SRW1500_GBL_PINMUX(5, 11, 0)>;
+		input-enable;
+	};
+
+	/omit-if-no-ref/ BT_UART_RXD__GPIO5: BT_UART_RXD__GPIO5 {
+		pinmux = <SRW1500_GBL_PINMUX(5, 11, 1)>;
+	};
+
+	/omit-if-no-ref/ BT_UART_RXD__UART0_TX: BT_UART_RXD__UART0_TX {
+		pinmux = <SRW1500_GBL_PINMUX(5, 11, 2)>;
+	};
+
+	/omit-if-no-ref/ RF_SW_CTRL_6__GPIO20: RF_SW_CTRL_6__GPIO20 {
+		pinmux = <SRW1500_GBL_PINMUX(20, 11, 0)>;
+	};
+
+	/omit-if-no-ref/ RF_SW_CTRL_6__DM0_DATA: RF_SW_CTRL_6__DM0_DATA {
+		pinmux = <SRW1500_GBL_PINMUX(20, 11, 1)>;
+	};
+
+	/omit-if-no-ref/ RF_SW_CTRL_6__I2C_MST_SDA: RF_SW_CTRL_6__I2C_MST_SDA {
+		pinmux = <SRW1500_GBL_PINMUX(20, 11, 2)>;
+		input-enable;
+		bias-pull-up;
+	};
+
+	/omit-if-no-ref/ RF_SW_CTRL_6__UART0_TX: RF_SW_CTRL_6__UART0_TX {
+		pinmux = <SRW1500_GBL_PINMUX(20, 11, 3)>;
+	};
+
+	/omit-if-no-ref/ RF_SW_CTRL_6__CAP2: RF_SW_CTRL_6__CAP2 {
+		pinmux = <SRW1500_GBL_PINMUX(20, 11, 5)>;
+	};
+
+	/omit-if-no-ref/ RF_SW_CTRL_7__GPIO13: RF_SW_CTRL_7__GPIO13 {
+		pinmux = <SRW1500_GBL_PINMUX(13, 11, 0)>;
+	};
+
+	/omit-if-no-ref/ RF_SW_CTRL_7__PDM_MUTE: RF_SW_CTRL_7__PDM_MUTE {
+		pinmux = <SRW1500_GBL_PINMUX(13, 11, 3)>;
+	};
+
+	/omit-if-no-ref/ RF_SW_CTRL_7__PWM5: RF_SW_CTRL_7__PWM5 {
+		pinmux = <SRW1500_GBL_PINMUX(13, 11, 4)>;
+	};
+
+	/omit-if-no-ref/ RF_SW_CTRL_7__CAP2: RF_SW_CTRL_7__CAP2 {
+		pinmux = <SRW1500_GBL_PINMUX(13, 11, 5)>;
+	};
+
+	/omit-if-no-ref/ RF_SW_CTRL_7__I2S_WS: RF_SW_CTRL_7__I2S_WS {
+		pinmux = <SRW1500_GBL_PINMUX(13, 11, 6)>;
+	};
+
+	/omit-if-no-ref/ RF_SW_CTRL_0__GPIO26: RF_SW_CTRL_0__GPIO26 {
+		pinmux = <SRW1500_GBL_PINMUX(26, 11, 0)>;
+	};
+
+	/omit-if-no-ref/ RF_SW_CTRL_0__PWM0: RF_SW_CTRL_0__PWM0 {
+		pinmux = <SRW1500_GBL_PINMUX(26, 11, 1)>;
+	};
+
+	/omit-if-no-ref/ RF_SW_CTRL_0__I2C_MST_SDA: RF_SW_CTRL_0__I2C_MST_SDA {
+		pinmux = <SRW1500_GBL_PINMUX(26, 11, 3)>;
+	};
+
+	/omit-if-no-ref/ RF_SW_CTRL_0__I2C_SLV_SDA: RF_SW_CTRL_0__I2C_SLV_SDA {
+		pinmux = <SRW1500_GBL_PINMUX(26, 11, 4)>;
+		input-enable;
+		bias-pull-up;
+	};
+
+	/omit-if-no-ref/ RF_SW_CTRL_1__GPIO27: RF_SW_CTRL_1__GPIO27 {
+		pinmux = <SRW1500_GBL_PINMUX(27, 11, 0)>;
+	};
+
+	/omit-if-no-ref/ RF_SW_CTRL_1__PWM1: RF_SW_CTRL_1__PWM1 {
+		pinmux = <SRW1500_GBL_PINMUX(27, 11, 1)>;
+	};
+
+	/omit-if-no-ref/ RF_SW_CTRL_1__I2C_MST_SCL: RF_SW_CTRL_1__I2C_MST_SCL {
+		pinmux = <SRW1500_GBL_PINMUX(27, 11, 3)>;
+	};
+
+	/omit-if-no-ref/ RF_SW_CTRL_1__I2C_SLV_SCL: RF_SW_CTRL_1__I2C_SLV_SCL {
+		pinmux = <SRW1500_GBL_PINMUX(27, 11, 4)>;
+	};
+
+	/omit-if-no-ref/ RF_SW_CTRL_1__PDM_MUTE: RF_SW_CTRL_1__PDM_MUTE {
+		pinmux = <SRW1500_GBL_PINMUX(27, 11, 6)>;
+	};
+
+	/omit-if-no-ref/ RF_SW_CTRL_2__GPIO26: RF_SW_CTRL_2__GPIO26 {
+		pinmux = <SRW1500_GBL_PINMUX(26, 11, 0)>;
+	};
+
+	/omit-if-no-ref/ RF_SW_CTRL_2__PWM0: RF_SW_CTRL_2__PWM0 {
+		pinmux = <SRW1500_GBL_PINMUX(26, 11, 1)>;
+	};
+
+	/omit-if-no-ref/ RF_SW_CTRL_2__I2C_MST_SDA: RF_SW_CTRL_2__I2C_MST_SDA {
+		pinmux = <SRW1500_GBL_PINMUX(26, 11, 3)>;
+	};
+
+	/omit-if-no-ref/ RF_SW_CTRL_2__I2C_SLV_SDA: RF_SW_CTRL_2__I2C_SLV_SDA {
+		pinmux = <SRW1500_GBL_PINMUX(26, 11, 4)>;
+	};
+
+	/omit-if-no-ref/ RF_SW_CTRL_3__GPIO27: RF_SW_CTRL_3__GPIO27 {
+		pinmux = <SRW1500_GBL_PINMUX(27, 11, 0)>;
+	};
+
+	/omit-if-no-ref/ RF_SW_CTRL_3__PWM1: RF_SW_CTRL_3__PWM1 {
+		pinmux = <SRW1500_GBL_PINMUX(27, 11, 1)>;
+	};
+
+	/omit-if-no-ref/ RF_SW_CTRL_3__I2C_MST_SCL: RF_SW_CTRL_3__I2C_MST_SCL {
+		pinmux = <SRW1500_GBL_PINMUX(27, 11, 3)>;
+	};
+
+	/omit-if-no-ref/ RF_SW_CTRL_3__I2C_SLV_SCL: RF_SW_CTRL_3__I2C_SLV_SCL {
+		pinmux = <SRW1500_GBL_PINMUX(27, 11, 4)>;
+		input-enable;
+		bias-pull-up;
+	};
+
+	/omit-if-no-ref/ RF_SW_CTRL_3__PDM_MUTE: RF_SW_CTRL_3__PDM_MUTE {
+		pinmux = <SRW1500_GBL_PINMUX(27, 11, 6)>;
+	};
+
+	/omit-if-no-ref/ RF_SW_CTRL_4__GPIO20: RF_SW_CTRL_4__GPIO20 {
+		pinmux = <SRW1500_GBL_PINMUX(20, 11, 0)>;
+	};
+
+	/omit-if-no-ref/ RF_SW_CTRL_4__DM0_DATA: RF_SW_CTRL_4__DM0_DATA {
+		pinmux = <SRW1500_GBL_PINMUX(20, 11, 1)>;
+	};
+
+	/omit-if-no-ref/ RF_SW_CTRL_4__I2C_MST_SDA: RF_SW_CTRL_4__I2C_MST_SDA {
+		pinmux = <SRW1500_GBL_PINMUX(20, 11, 2)>;
+	};
+
+	/omit-if-no-ref/ RF_SW_CTRL_4__UART0_TX: RF_SW_CTRL_4__UART0_TX {
+		pinmux = <SRW1500_GBL_PINMUX(20, 11, 3)>;
+	};
+
+	/omit-if-no-ref/ RF_SW_CTRL_4__CAP2: RF_SW_CTRL_4__CAP2 {
+		pinmux = <SRW1500_GBL_PINMUX(20, 11, 5)>;
+	};
+
+	/omit-if-no-ref/ RF_SW_CTRL_5__GPIO21: RF_SW_CTRL_5__GPIO21 {
+		pinmux = <SRW1500_GBL_PINMUX(21, 11, 0)>;
+	};
+
+	/omit-if-no-ref/ RF_SW_CTRL_5__DM0_CLK: RF_SW_CTRL_5__DM0_CLK {
+		pinmux = <SRW1500_GBL_PINMUX(21, 11, 1)>;
+	};
+
+	/omit-if-no-ref/ RF_SW_CTRL_5__I2C_MST_SCL: RF_SW_CTRL_5__I2C_MST_SCL {
+		pinmux = <SRW1500_GBL_PINMUX(21, 11, 2)>;
+	};
+
+	/omit-if-no-ref/ RF_SW_CTRL_5__UART0_RX: RF_SW_CTRL_5__UART0_RX {
+		pinmux = <SRW1500_GBL_PINMUX(21, 11, 3)>;
+	};
+
+	/omit-if-no-ref/ MCU_GPIO_11__XSPI_CLK: MCU_GPIO_11__XSPI_CLK {
+		pinmux = <SRW1500_GBL_PINMUX(11, 1, 0)>;
+		input-disable;
+	};
+
+	/omit-if-no-ref/ MCU_GPIO_11__GPIO11: MCU_GPIO_11__GPIO11 {
+		pinmux = <SRW1500_GBL_PINMUX(11, 1, 1)>;
+	};
+
+	/omit-if-no-ref/ MCU_GPIO_12__XSPI_CLKN: MCU_GPIO_12__XSPI_CLKN {
+		pinmux = <SRW1500_GBL_PINMUX(12, 1, 0)>;
+		input-disable;
+	};
+
+	/omit-if-no-ref/ MCU_GPIO_12__GPIO12: MCU_GPIO_12__GPIO12 {
+		pinmux = <SRW1500_GBL_PINMUX(12, 1, 1)>;
+	};
+
+	/omit-if-no-ref/ BT_UART_TXD__XSPI_DATA5: BT_UART_TXD__XSPI_DATA5 {
+		pinmux = <SRW1500_GBL_PINMUX(6, 11, 0)>;
+		input-enable;
+	};
+
+	/omit-if-no-ref/ BT_UART_TXD__GPIO6: BT_UART_TXD__GPIO6 {
+		pinmux = <SRW1500_GBL_PINMUX(6, 11, 1)>;
+	};
+
+	/omit-if-no-ref/ BT_UART_TXD__UART0_RX: BT_UART_TXD__UART0_RX {
+		pinmux = <SRW1500_GBL_PINMUX(6, 11, 2)>;
+	};
+
+	/omit-if-no-ref/ GPADC_IN4__UART0_TX: GPADC_IN4__UART0_TX {
+		pinmux = <SRW1500_GBL_PINMUX(36, 12, 1)>;
+		input-disable;
+		drive-strength = <2>;
+	};
+
+	/omit-if-no-ref/ GPADC_IN6__UART0_RX: GPADC_IN6__UART0_RX {
+		pinmux = <SRW1500_GBL_PINMUX(38, 12, 1)>;
+		input-disable;
+		drive-strength = <2>;
+	};
+
+	/omit-if-no-ref/ GPADC_IN0__UART1_RTS: GPADC_IN0__UART1_RTS {
+		pinmux = <SRW1500_GBL_PINMUX(32, 12, 1)>;
+	};
+
+	/omit-if-no-ref/ GPADC_IN1__UART1_CTS: GPADC_IN1__UART1_CTS {
+		pinmux = <SRW1500_GBL_PINMUX(33, 12, 1)>;
+		input-enable;
+	};
+
+	/omit-if-no-ref/ GPADC_IN2__UART1_TX: GPADC_IN2__UART1_TX {
+		pinmux = <SRW1500_GBL_PINMUX(34, 12, 1)>;
+	};
+
+	/omit-if-no-ref/ GPADC_IN3__UART1_RX: GPADC_IN3__UART1_RX {
+		pinmux = <SRW1500_GBL_PINMUX(35, 12, 1)>;
+		input-enable;
+	};
+};

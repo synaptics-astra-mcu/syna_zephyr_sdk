@@ -1,0 +1,34 @@
+# Copyright (c) 2025 Synaptics Incorporated
+# SPDX-License-Identifier: Apache-2.0
+
+menu "Device Drivers"
+
+# zephyr-keep-sorted-start
+rsource "cache/Kconfig"
+rsource "can/Kconfig"
+rsource "clock_control/Kconfig"
+rsource "counter/Kconfig"
+rsource "dma/Kconfig"
+rsource "entropy/Kconfig"
+rsource "ethernet/Kconfig"
+rsource "flash/Kconfig"
+rsource "fc/Kconfig"
+
+rsource "hwinfo/Kconfig"
+rsource "mbox/Kconfig"
+rsource "mdio/Kconfig"
+rsource "i2s/Kconfig"
+rsource "misc/Kconfig"
+rsource "pinctrl/Kconfig"
+rsource "reset/Kconfig"
+rsource "sdhc/Kconfig"
+rsource "security/Kconfig"
+rsource "timer/Kconfig"
+rsource "usb/Kconfig"
+rsource "video/Kconfig"
+rsource "watchdog/Kconfig"
+rsource "dmic/Kconfig"
+rsource "wifi/synaptics/Kconfig"
+# zephyr-keep-sorted-stop
+
+endmenu

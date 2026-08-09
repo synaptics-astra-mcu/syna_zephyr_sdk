@@ -1,0 +1,19 @@
+#
+# Copyright 2026 Synaptics Incorporated
+#
+# SPDX-License-Identifier: Apache-2.0
+#
+
+config AUDIO_DMIC_SYNA_SR100
+	bool "Synaptics SR100/SR110 DMIC driver"
+	default y
+	depends on DT_HAS_SYNA_SR100_DMIC_ENABLED && CLOCK_CONTROL
+	depends on AUDIO_DMIC
+	select DMA
+	select PINCTRL
+	select RESET
+	help
+	  Enable support for the Synaptics SR100/SR110 digital microphone
+	  controller. The driver captures PCM samples through the LP Sense AMIN
+	  ring and transfers completed blocks to applications using DMA. It
+	  implements the standard Zephyr digital microphone API.

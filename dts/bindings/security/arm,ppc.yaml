@@ -1,0 +1,27 @@
+# Copyright (c) 2026 Synaptics Incorporated
+# SPDX-License-Identifier: Apache-2.0
+
+description: Arm TrustZone Peripheral Protection Controller register group
+compatible: "arm,ppc"
+
+include: base.yaml
+
+properties:
+  ns-reg:
+    type: int
+    required: true
+    description: Absolute address of non-secure attribution register.
+  priv-reg:
+    type: int
+    required: true
+    description: Absolute address of privileged-access register.
+  sresp-reg:
+    type: int
+    required: true
+    description: Absolute address of secure-response register.
+  arm,peripherals:
+    type: array
+    description: |
+      Flattened tuples: <ns_pos priv_pos sresp_pos flags>.
+      flags bit0: non-secure, bit1: user/non-privileged allowed,
+      bit2: error response instead of RAZ/WI.

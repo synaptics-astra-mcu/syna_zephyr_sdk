@@ -1,0 +1,99 @@
+# SPDX-License-Identifier: Apache-2.0
+# Module: USB HID profile configuration options
+
+menu "USB HID Compatibility Layer"
+
+config USB_HID_KEYBOARD
+	bool "Enable keyboard HID profile in stack service"
+	depends on USBD_HID_SUPPORT
+	default y
+	help
+	  Enables keyboard report generation and submission in the
+	  stack-owned HID service.
+
+config USB_HID_MOUSE
+	bool "Enable mouse HID profile in stack service"
+	depends on USBD_HID_SUPPORT
+	default y
+	help
+	  Enables mouse report generation and submission in the
+	  stack-owned HID service.
+
+config USB_HID_LAYER
+	bool "USB HID compatibility adapter"
+	depends on USBD_HID_SUPPORT
+	help
+	  Enable a Zephyr USB HID compatibility adapter intended to ease
+	  migration from TinyUSB-oriented HID modules.
+
+choice USB_HID_PROFILE_MODE
+	prompt "HID compat profile selection mode"
+	depends on USB_HID_LAYER
+	default USB_HID_PROFILES_ALL
+	help
+	  Choose whether all compatibility profiles are enabled together,
+	  or enabled selectively one by one.
+
+config USB_HID_PROFILES_ALL
+	bool "Enable all compat profiles"
+
+config USB_HID_PROFILES_SELECTIVE
+	bool "Select compat profiles individually"
+
+endchoice
+
+config USB_HID_ALS
+	bool "Enable ALS profile in compat adapter"
+	depends on USB_HID_LAYER
+	default y if USB_HID_PROFILES_ALL
+	default n
+	help
+	  Enables Ambient Light Sensor HID profile support in the
+	  compatibility adapter.
+
+config USB_HID_PTP
+	bool "Enable PTP profile in compat adapter"
+	depends on USB_HID_LAYER
+	default y if USB_HID_PROFILES_ALL
+	default n
+	help
+	  Enables Precision Touchpad HID profile support in the
+	  compatibility adapter.
+
+config USB_HID_TSP
+	bool "Enable TSP profile in compat adapter"
+	depends on USB_HID_LAYER
+	default y if USB_HID_PROFILES_ALL
+	default n
+	help
+	  Enables Touch Screen/Pen HID profile support in the
+	  compatibility adapter.
+
+config USB_HID_CUSTOM
+	bool "Enable Custom profile in compat adapter"
+	depends on USB_HID_LAYER
+	default y if USB_HID_PROFILES_ALL
+	default n
+	help
+	  Enables vendor custom HID profile support in the
+	  compatibility adapter.
+
+config USB_HID_HUMAN_PRESENCE
+	bool "Enable Human Presence profile in compat adapter"
+	depends on USB_HID_LAYER
+	default y if USB_HID_PROFILES_ALL
+	default n
+	help
+	  Enables Human Presence HID profile support in the
+	  compatibility adapter.
+
+config USB_HID_GENERIC_ALGO
+	bool "Enable Generic Algo profile in compat adapter"
+	depends on USB_HID_LAYER
+	default y if USB_HID_PROFILES_ALL
+	default n
+	help
+	  Enables Generic Algorithm HID profile support in the
+	  compatibility adapter.
+
+endmenu

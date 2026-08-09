@@ -1,0 +1,49 @@
+# Copyright (c) 2026 Synaptics Incorporated
+#
+# SPDX-License-Identifier: Apache-2.0
+
+config BT_HCI_SYNA
+	bool "Synaptics SYNA BT HCI UART driver"
+	depends on BT_H4
+	select BT_HCI_SETUP
+	select UART_USE_RUNTIME_CONFIGURE
+	help
+	  Enable the vendor HCI UART setup driver for Synaptics SYNA
+	  Bluetooth controllers.  This driver implements bt_h4_vnd_setup()
+	  to assert BT_REGON and download the patchram firmware before the
+	  Zephyr BT HOST stack initializes.
+
+config BT_HCI_SYNA_BAUD_RATE
+	int "SYNA HCI UART operating baudrate (after patchram)"
+	depends on BT_HCI_SYNA
+	default 1500000
+	help
+	  UART baudrate used for patchram download and normal HCI operation.
+	  The driver starts at 115200, sends VS_UPDATE_UART_BAUDRATE to switch
+	  to this rate for the download, then switches back after patchram and
+	  re-applies this rate for normal BT HOST stack operation.
+	  Set to 115200 to disable baudrate switching (debug/compatibility).
+
+config BT_HCI_SNOOP
+	bool "HCI packet snoop logging to console"
+	default n
+	help
+	  When enabled, all HCI TX and RX packets are printed to the Zephyr
+	  console in a line-oriented hex format that can be post-processed into
+	  a btsnoop (.hci) capture file for Wireshark / hcidump.
+
+	  Long packets are automatically split into 100-byte chunks per line.
+
+	  Example output:
+	    SNOOP:TX[1](01):TX:01 03 0C 00
+	    SNOOP:RX[1](01):RX:04 0E 04 01 03 0C 00
+	    SNOOP:RX[2](01):RX:04 0E FC 01 14 0C 00 42 43 4D ...
+	    SNOOP:RX[2](02):RX:00 00 00 ...
+
+	  Hooks are inserted in the Zephyr H:4 HCI UART transport (h4.c)
+	  for all Zephyr BT stack samples.
+
+	  NOTE: Build with CONFIG_LOG_PRINTK=n so that printk() bypasses the
+	  deferred log buffer and snoop lines are never dropped.
+
+	  Disable in production builds to avoid UART overhead.

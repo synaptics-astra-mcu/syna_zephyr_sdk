@@ -1,0 +1,101 @@
+# Copyright (c) 2026 Synaptics, Inc.
+# SPDX-License-Identifier: Apache-2.0
+
+description: Synaptics JPEG video encoder
+
+compatible: "syna,enc-video"
+
+include:
+  - name: base.yaml
+
+properties:
+  interrupts:
+    required: true
+    description: |
+      JPEG encoder interrupts exposed by the SoC NVIC.
+      Index 0 is frame processing done ("frame-done").
+      Index 1 is FMIN1 frame stored ("fmin1-stored").
+      Index 2 is an optional status/miscellaneous event interrupt ("status").
+      The driver supports up to three IRQ lines.
+
+  interrupt-names:
+    required: true
+    description: |
+      Interrupt names in index order.
+      Use "frame-done", "fmin1-stored", and optional "status".
+
+  mode:
+    type: int
+    default: 0
+    enum:
+      - 0
+      - 1
+    description: |
+      Wrapper mode selection.
+      0: Sensor/CSI -> JPEG encoder in reserved memory. The application must configure
+         the connected sensor format before starting the wrapper. The live
+         path currently supports RAW8 Bayer sensor input only. In this mode,
+         provide a child ``port/endpoint`` input with ``data-lanes`` set to
+         the CSI-2 lane count and a remote endpoint to the sensor.
+      1: Static/raw memory -> JPEG encoder in reserved memory. A child
+         ``port/endpoint`` is optional in this mode.
+
+  memory-region:
+    type: phandle
+    required: true
+    description: |
+      Required reserved memory region used as the JPEG encoder raw/JPEG working
+      area (raw input region + JPEG output region). The referenced node must be writable, CPU-accessible to the
+      driver, and marked non-cacheable via ``zephyr,memory-attr``.
+
+  max-jpeg-size:
+    type: int
+    description: |
+      Maximum JPEG bytes to scan/copy from the JPEG output region.
+      This should be sized for the worst-case JPEG output for the selected
+      resolution/quality and must fit within the reserved ``memory-region``.
+
+  frame-raw-offset:
+    type: int
+    default: 0
+    description: |
+      Byte offset from the ``memory-region`` base where the raw frame starts in
+      mode 0.
+
+  # In mode=1 (memory-input), the driver manages the internal layout within the
+  # provided ``memory-region``. The application only needs to populate the raw
+  # input frame at ``frame-raw-offset``; the JPEG output region is placed after
+  # the raw input region.
+
+  csi-id:
+    type: int
+    default: 0
+    description: LP sense CSI receiver instance id.
+
+  csi-timing:
+    type: int
+    default: 0
+    description: LP sense CSI timing selector.
+
+  csi-interface:
+    type: int
+    default: 1
+    description: LP sense CSI interface selector.
+
+  csi-virt-ch:
+    type: int
+    default: 0
+    description: CSI virtual channel.
+
+  csi-auto-flush:
+    type: int
+    default: 1
+    description: LP sense CSI auto flush enable.
+
+child-binding:
+  child-binding:
+    description: |
+      Video interface ``port/endpoint`` child nodes.
+      The endpoint ``data-lanes`` value is used as ``csi_lanes`` by the
+      driver in mode 0.
+    include: [video-interfaces.yaml]

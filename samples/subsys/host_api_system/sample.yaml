@@ -1,0 +1,11 @@
+sample:
+  name: Host API System
+
+tests:
+  sample.subsys.host_api_system:
+    build_only: true
+    platform_allow:
+      - sr100_rdk/sr100/m55
+    tags:
+      - host_api
+      - usb

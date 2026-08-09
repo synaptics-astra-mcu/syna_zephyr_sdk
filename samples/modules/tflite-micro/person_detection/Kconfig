@@ -1,0 +1,29 @@
+# Copyright (c) 2026 Synaptics Incorporated
+# SPDX-License-Identifier: Apache-2.0
+
+mainmenu "Person Detection Sample"
+
+config PERSON_DETECTION_MODEL_FLASH_ADDR
+	hex "XIP flash address of the model binary"
+	default 0x3C629000
+	help
+	  Start address in the XIP flash region where the TFLite model binary
+	  has been programmed. Board-specific; adjust to match the flash
+	  partition layout of the target hardware.
+
+config PERSON_DETECTION_INPUT_FLASH_ADDR
+	hex "XIP flash address of the input image binary"
+	default 0x3CA00000
+	help
+	  Start address in the XIP flash region where the raw input image
+	  binary has been programmed.
+
+config PERSON_DETECTION_MODEL_SIZE
+	int "Size of the model binary in bytes"
+	default 1160832
+	help
+	  Byte length of the model binary stored at
+	  PERSON_DETECTION_MODEL_FLASH_ADDR. Must match the actual file size
+	  of the programmed model; a mismatch will silently copy wrong data.
+
+source "Kconfig.zephyr"

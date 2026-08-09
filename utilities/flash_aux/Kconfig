@@ -1,0 +1,10 @@
+# SPDX-License-Identifier: Apache-2.0
+
+config MODULE_FLASH_AUX_ENABLED
+	bool "Flash auxiliary backend"
+	depends on FLASH
+	depends on FLASH_JESD216_API
+	select CRC
+	default n
+	help
+	  Enable the flash auxiliary backend used by Host API service ID 3.

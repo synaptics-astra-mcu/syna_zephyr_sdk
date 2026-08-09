@@ -1,0 +1,35 @@
+/*
+ * Copyright (c) 2026 Synaptics Incorporated
+ *
+ * @brief USB HID TOUCHPAD profile API.
+ *
+ * @file usb_hid_touchpad.h
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
+#ifndef SYNA_USB_HID_TOUCHPAD_H_
+/* Include guard for touchpad profile report builder API. */
+#define SYNA_USB_HID_TOUCHPAD_H_
+
+#include <stddef.h>
+#include <stdint.h>
+
+/* Touchpad report ID used by composite HID descriptor. */
+#define USB_HID_TOUCHPAD_REPORT_ID   0x04U
+/* Byte size of encoded touchpad input report. */
+#define USB_HID_TOUCHPAD_REPORT_SIZE 6U
+
+/**
+ * \brief   Build touchpad HID input report bytes.
+ *
+ * \details Encodes tip state and 16-bit X/Y coordinates.
+ *
+ * \param   counter    Monotonic sample counter used as report payload source.
+ * \param   report     Output report buffer.
+ * \param   report_len Size of output report buffer in bytes.
+ * \return  0 on success, negative errno on invalid arguments.
+ */
+int usb_hid_touchpad_build_report(uint32_t counter, uint8_t *report, size_t report_len);
+
+#endif /* SYNA_USB_HID_TOUCHPAD_H_ */

@@ -1,0 +1,70 @@
+# Copyright (c) 2026 Synaptics Incorporated
+# SPDX-License-Identifier: Apache-2.0
+
+description: |
+    Synaptics srw1500 Pin controller Node
+    Based on pincfg-node.yaml binding.
+
+    Note: `bias-disable` is a default pin configuration. It is applied when
+          no `bias-foo` property is set.
+
+compatible: "syna,srw1500-pinctrl"
+
+include: base.yaml
+
+properties:
+  reg:
+    required: true
+
+child-binding:
+  description: Pin control state node
+
+  include:
+    - name: pincfg-node.yaml
+      property-allowlist:
+        - bias-disable
+        - bias-enable
+        - bias-pull-down
+        - bias-pull-up
+        - drive-strength
+        - input-disable
+        - input-enable
+        - input-schmitt-disable
+        - input-schmitt-enable
+        - slew-rate
+
+  properties:
+    pincfg:
+      type: array
+      description: Register offset of pin configuration.
+
+    pinmux:
+      type: array
+      description: Pin muxing configuration.
+
+  child-binding:
+    description: Pin control group node
+
+    include:
+      - name: pincfg-node.yaml
+        property-allowlist:
+          - bias-disable
+          - bias-enable
+          - bias-pull-down
+          - bias-pull-up
+          - drive-strength
+          - input-disable
+          - input-enable
+          - input-schmitt-disable
+          - input-schmitt-enable
+          - slew-rate
+
+    properties:
+      pincfg:
+        type: array
+        description: Register offset of pin configuration.
+
+      pinmux:
+        required: true
+        type: array
+        description: Pin muxing configuration.

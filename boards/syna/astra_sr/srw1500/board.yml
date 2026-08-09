@@ -1,0 +1,6 @@
+board:
+  name: srw1500_rdk
+  full_name: Syna SRW1500 RDK
+  vendor: synaptics
+  socs:
+  - name: srw1500

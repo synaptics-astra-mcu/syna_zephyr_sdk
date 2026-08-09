@@ -1,0 +1,190 @@
+/*
+ * Copyright (c) 2026 Synaptics Incorporated
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ */
+ 
+/dts-v1/;
+#include <arm/syna/astra_sr/srw1500.dtsi>
+#include <arm/syna/astra_sr/srw1500_pinctrl.dtsi>
+
+/ {
+    model = "srw1500";
+    compatible = "syna,srw1500";
+
+    chosen {
+        zephyr,console = &uart0;
+        zephyr,shell-uart = &uart0;
+        zephyr,flash = &sram_text0;
+        zephyr,code-partition = &sram_text0;
+        zephyr,sram_code = &sram_text0;
+        zephyr,sram = &sram_data0;
+        zephyr,itcm = &itcm0;
+        zephyr,dtcm = &dtcm0;
+        zephyr,data-uc = &data_uc0;
+        zephyr,heap-sram = &sram_heap0;
+        zephyr,entropy = &trng0;
+    };
+};
+
+&sram_text0 {
+    status = "okay";
+};
+
+&itcm0 {
+    status = "okay";
+};
+
+&dtcm0 {
+    status = "okay";
+};
+
+&uart0 {
+    pinctrl-0 = <&RF_SW_CTRL_6__GPIO20 &RF_SW_CTRL_5__GPIO21
+                 &SDIO_CMD__UART0_TX &SDIO_DATA_0__UART0_RX>;
+    pinctrl-names = "default";
+    status = "okay";
+};
+
+&uart1 {
+    pinctrl-0 = <&GPADC_IN2__UART1_TX &GPADC_IN3__UART1_RX
+                 &GPADC_IN1__UART1_CTS &GPADC_IN0__UART1_RTS>;
+    pinctrl-names = "default";
+    hw-flow-control;
+    status = "okay";
+};
+
+&timer_slowclk {
+    status = "okay";
+};
+
+&gpio0 {
+    status = "okay";
+};
+
+&gpio1 {
+    status = "okay";
+};
+
+&gpio2 {
+    status = "okay";
+};
+
+&gpio3 {
+    status = "okay";
+};
+
+&i2c0 {
+    pinctrl-0 = <&RF_SW_CTRL_6__I2C_MST_SDA &RF_SW_CTRL_5__I2C_MST_SCL>;
+    pinctrl-names = "default";
+    status = "okay";
+};
+
+&i2cs0 {
+    pinctrl-0 = <&RF_SW_CTRL_0__I2C_SLV_SDA &RF_SW_CTRL_3__I2C_SLV_SCL>;
+    pinctrl-names = "default";
+    status = "okay";
+};
+
+&spi0 {
+    pinctrl-0 = <&GPIO_2__SPI_MSTR_MOSI &GPIO_3__SPI_MSTR_CLK
+                 &GPIO_4__SPI_MSTR_CS &GPIO_5__SPI_MSTR_MISO>;
+    pinctrl-names = "default";
+    status = "okay";
+};
+
+&sys_counter {
+    status = "okay";
+};
+
+&fc {
+    status = "okay";
+};
+
+&timer0 {
+    status = "okay";
+};
+
+&timer1 {
+    status = "okay";
+};
+
+&timer2 {
+    status = "okay";
+};
+
+&timer3 {
+    status = "okay";
+};
+
+&watchdog0 {
+    status = "okay";
+};
+
+&watchdog1 {
+    status = "okay";
+};
+
+&watchdog2 {
+    status = "okay";
+};
+
+&watchdog_slowclk {
+    status = "okay";
+};
+
+&xspi {
+    status = "okay";
+    pinctrl-0 = <&BT_HOST_WAKE__XSPI_DQS &BT_DEV_WAKE__XSPI_CS1
+                &BT_I2S_DI__XSPI_DATA0 &BT_I2S_WS__XSPI_DATA1
+                &BT_I2S_DO__XSPI_DATA2 &BT_I2S_CLK__XSPI_DATA3
+                &BT_UART_RXD__XSPI_DATA4 &BT_UART_TXD__XSPI_DATA5
+                &BT_UART_RTS_N__XSPI_DATA6 &BT_UART_CTS_N__XSPI_DATA7
+                &BT_CLK_REQ__XSPI_CS0 &MCU_GPIO_11__XSPI_CLK
+                &MCU_GPIO_12__XSPI_CLKN>;
+    pinctrl-names = "default";
+};
+
+&sau_cfg {
+    status = "okay";
+};
+
+&mpc_sram {
+    status = "okay";
+};
+
+&mpc_xspi {
+    status = "disabled";
+};
+
+&ppc_p0 {
+    status = "okay";
+};
+
+&ppc_p1 {
+    status = "okay";
+};
+
+&ppc_p2 {
+    status = "okay";
+};
+
+&ppc_exp0 {
+    status = "okay";
+};
+
+&ppc_exp1 {
+    status = "okay";
+};
+
+&tgu_itcm {
+    status = "disabled";
+};
+
+&tgu_dtcm {
+    status = "disabled";
+};
+
+&trng0 {
+    status = "okay";
+};

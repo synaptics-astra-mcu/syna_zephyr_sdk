@@ -1,0 +1,474 @@
+/*
+ * Copyright (c) 2026 Synaptics Incorporated
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ */
+ 
+/dts-v1/;
+#include <freq.h>
+#include <arm/armv8.1-m.dtsi>
+#include <zephyr/dt-bindings/clock/syna_srw1500_clock.h>
+#include <zephyr/dt-bindings/reset/syna_srw1500_reset.h>
+#include <zephyr/dt-bindings/i2c/i2c.h>
+#include <zephyr/dt-bindings/memory-attr/memory-attr-arm.h>
+#include <zephyr/dt-bindings/security/srw1500-security.h>
+#include <zephyr/dt-bindings/security/srw1500-ppc.h>
+
+/ {
+    cpus {
+        #address-cells = <1>;
+        #size-cells = <0>;
+
+        cpu0: cpu@0 {
+            device_type = "cpu";
+            compatible = "arm,cortex-m52";
+            reg = <0>;
+        };
+    };
+
+    #address-cells = <1>;
+    #size-cells = <1>;
+
+    mpu: mpu@e000ed90 {
+        compatible = "arm,armv8m-mpu";
+        reg = <0xe000ed90 0x40>;
+    };
+
+    itcm0: itcm@10000000 {
+        compatible = "zephyr,memory-region", "arm,itcm";
+        reg = <0x10000000 0x00020000>;
+        zephyr,memory-region = "ITCM";
+        zephyr,memory-attr = <DT_MEM_ARM(ATTR_MPU_FLASH)>;
+    };
+
+    dtcm0: dtcm@30000000 {
+        compatible = "zephyr,memory-region", "arm,dtcm";
+        reg = <0x30000000 0x00020000>;
+        zephyr,memory-region = "DTCM";
+    };
+
+    sram_text0: sram_text@32000000 {
+        compatible = "mmio-sram";
+        reg = <0x32000000 0x00030000>; /* 192 KB for code */
+    };
+
+    sram_data0: sram_data@32030000 {
+        compatible = "mmio-sram";
+        reg = <0x32030000 0x00060000>; /* 384 KB for data */
+    };
+
+    data_uc0: memory@32090000 {
+        compatible = "zephyr,memory-region", "arm,data_uc";
+        reg = <0x32090000 0x00010000>;
+        zephyr,memory-region = "DATA_UC";
+    };
+
+    sram_heap0: memory@320A0000 {
+        compatible = "zephyr,memory-region", "arm,sram_heap";
+        reg = <0x320A0000 0x00050000>;
+        zephyr,memory-region = "SRAM_HEAP";
+    };
+
+    slow_clock: slow_clock {
+        compatible = "fixed-clock";
+        #clock-cells = <0>;
+        clock-frequency = <32000>;
+        status = "okay";
+    };
+
+    periph_clock: periph_clock {
+        compatible = "fixed-clock";
+        #clock-cells = <0>;
+        clock-frequency = <24000000>;
+        status = "okay";
+    };
+
+    sys_cnt_clk: sys_cnt_clk {
+        compatible = "fixed-clock";
+        #clock-cells = <0>;
+        clock-frequency = <24000000>;
+        status = "okay";
+    };
+    soc {
+        clkctrl: clock-controller@58025600 {
+            compatible = "syna,srw1500-clock";
+            reg = <0x58025600 0x44>,
+                  <0x58024600 0x0c>;
+            reg-names = "global", "global_sec";
+            clock-frequency = <24000000>;
+            #clock-cells = <1>;
+            status = "okay";
+        };
+
+        reset: reset-controller@58025400 {
+            compatible = "syna,srw1500-reset";
+            reg = <0x58025400 0x0c>,
+                  <0x58024418 0x0c>;
+            reg-names = "global", "global_sec";
+            #reset-cells = <1>;
+            status = "okay";
+        };
+
+        uart0: serial@58030000 {
+            compatible = "snps,dw-apb-uart", "ns16550";
+            reg = <0x58030000 0x1000>;
+            current-speed = <115200>;
+            clocks = <&clkctrl SYNA_UART0_CLK>;
+            resets = <&reset SYNA_UART0_RST>;
+            dlf = <0>;
+            reg-shift = <2>;
+            interrupt-parent = <&nvic>;
+            interrupts = <85 1>;
+            status = "disabled"; /* enabled by board DTS */
+        };
+
+        uart1: serial@58031000 {
+            compatible = "snps,dw-apb-uart", "ns16550";
+            reg = <0x58031000 0x1000>;
+            current-speed = <115200>;
+            clocks = <&clkctrl SYNA_UART1_CLK>;
+            resets = <&reset SYNA_UART1_RST>;
+            dlf = <1>;
+            reg-shift = <2>;
+            interrupt-parent = <&nvic>;
+            interrupts = <86 1>;
+            status = "disabled"; /* enabled by board DTS */
+        };
+
+        timer_slowclk: timer@5800E000 {
+            compatible = "arm,cmsdk-timer";
+            reg = <0x5800E000 0x1000>;
+            interrupt-parent = <&nvic>;
+            interrupts = <7 3>;
+            clocks = <&slow_clock>;
+            status = "disabled";
+        };
+
+        gpio0: gpio@58038000 {
+            compatible = "snps,designware-gpio";
+            reg = <0x58038000 0x1000>;
+            clocks = <&clkctrl SYNA_GPIO_CLK>;
+            gpio-controller;
+            #gpio-cells = <2>;
+            ngpios = <8>;
+            interrupt-parent = <&nvic>;
+            interrupts = <92 0>;
+            status = "disabled";
+        };
+
+        gpio1: gpio@58039000 {
+            compatible = "snps,designware-gpio";
+            reg = <0x58039000 0x1000>;
+            clocks = <&clkctrl SYNA_GPIO_CLK>;
+            gpio-controller;
+            #gpio-cells = <2>;
+            ngpios = <8>;
+            interrupt-parent = <&nvic>;
+            interrupts = <93 0>;
+            status = "disabled";
+        };
+
+        gpio2: gpio@5803A000 {
+            compatible = "snps,designware-gpio";
+            reg = <0x5803A000 0x1000>;
+            clocks = <&clkctrl SYNA_GPIO_CLK>;
+            gpio-controller;
+            #gpio-cells = <2>;
+            ngpios = <8>;
+            interrupt-parent = <&nvic>;
+            interrupts = <94 0>;
+            status = "disabled";
+        };
+
+        gpio3: gpio@5803B000 {
+            compatible = "snps,designware-gpio";
+            reg = <0x5803B000 0x1000>;
+            clocks = <&clkctrl SYNA_GPIO_CLK>;
+            gpio-controller;
+            #gpio-cells = <2>;
+            ngpios = <8>;
+            interrupt-parent = <&nvic>;
+            interrupts = <95 0>;
+            status = "disabled";
+        };
+
+        i2c0: i2c@58035000 {
+            compatible = "snps,designware-i2c";
+            reg = <0x58035000 0x1000>;
+            interrupt-parent = <&nvic>;
+            interrupts = <90 3>;
+            clocks = <&clkctrl SYNA_I2C0_CLK>;
+            resets = <&reset SYNA_I2C0_RST>;
+            clock-frequency = <I2C_BITRATE_FAST>;
+            #address-cells = <1>;
+            #size-cells = <0>;
+
+            status = "disabled";
+        };
+
+        i2cs0: i2c@59009000 {
+            compatible = "snps,designware-i2c";
+            reg = <0x59009000 0x1000>;
+            interrupt-parent = <&nvic>;
+            interrupts = <91 3>;
+            clock-frequency = <I2C_BITRATE_FAST>;
+            #address-cells = <1>;
+            #size-cells = <0>;
+
+            status = "disabled";
+        };
+
+        spi0: spi@58034000 {
+            compatible = "snps,designware-spi";
+            #address-cells = <1>;
+            #size-cells = <0>;
+            reg = <0x58034000 0x1000>;
+            interrupt-parent = <&nvic>;
+            interrupts = <89 3>;
+            clocks = <&clkctrl SYNA_SPI0_CLK>;
+            clock-frequency = <400000000>;
+            fifo-depth = <32>;
+            max-xfer-size = <16>;
+
+            status = "disabled";
+        };
+
+        sys_counter: syscounter@5800C000 {
+            compatible = "arm,corstone-syscounter";
+            reg = <0x5800C000 0x1000>;
+            clocks = <&sys_cnt_clk>;
+
+            status = "disabled";
+        };
+
+        xspi: flash-controller@58050000 {
+            compatible = "cdns,xspi";
+            reg = <0x58050000 0x2000>,
+                <0x38000000 0x02000000>;
+            reg-names = "xspi_reg", "xspi_xip";
+            interrupt-parent = <&nvic>;
+            interrupts = <99 0>;
+            clocks = <&clkctrl SYNA_XSPI_CLK>;
+            resets = <&reset SYNA_XSPI_RST>;
+            erase-block-size = <4096>;
+            write-block-size = <1>;
+            io-mode = "octa";
+            stig-chip-select = <1>;
+            status = "disabled";
+
+            size = <0x10000000>;
+            partitions {
+                compatible = "fixed-partitions";
+                #address-cells = <1>;
+                #size-cells = <1>;
+
+                slot0_partition: partition@72274 {
+                    label = "image-0";
+                    reg = <0x72274 0x27fd8c>;
+                };
+            };
+        };
+
+        pinctrl_gbl: pin-controller@59001000 {
+            compatible = "syna,srw1500-pinctrl";
+            reg = <0x59001000 0x10>, <0x59001010 0x20>;
+            reg-names = "pinmux", "pincfg";
+        };
+
+        fc: flight_control@58011000 {
+            compatible = "syna,flight-control";
+            reg = <0x58011000 0x1000>;
+
+            status = "disabled";
+        };
+
+        timer0: timer@58000000 {
+            compatible = "arm,corstone-timer";
+            reg = <0x58000000 0x1000>;
+            interrupt-parent = <&nvic>;
+            interrupts = <22 3>;
+            system_counter = <&sys_counter>;
+
+            status = "disabled";
+        };
+
+        timer1: timer@58001000 {
+            compatible = "arm,corstone-timer";
+            reg = <0x58001000 0x1000>;
+            interrupt-parent = <&nvic>;
+            interrupts = <23 3>;
+            system_counter = <&sys_counter>;
+
+            status = "disabled";
+        };
+
+        timer2: timer@58002000 {
+            compatible = "arm,corstone-timer";
+            reg = <0x58002000 0x1000>;
+            interrupt-parent = <&nvic>;
+            interrupts = <24 3>;
+            system_counter = <&sys_counter>;
+
+            status = "disabled";
+        };
+
+        timer3: timer@58003000 {
+            compatible = "arm,corstone-timer";
+            reg = <0x58003000 0x1000>;
+            interrupt-parent = <&nvic>;
+            interrupts = <25 3>;
+            system_counter = <&sys_counter>;
+
+            status = "disabled";
+        };
+
+        timer4: timer@58004000 {
+            compatible = "arm,corstone-timer";
+            reg = <0x58004000 0x1000>;
+            interrupt-parent = <&nvic>;
+            interrupts = <26 3>;
+            system_counter = <&sys_counter>;
+
+            status = "disabled";
+        };
+
+        watchdog0: watchdog@58006000 {
+            compatible = "arm,corstone-watchdog";
+            reg = <0x58006000 0x2000>;
+            interrupt-parent = <&nvic>;
+            interrupts = <27 0>, <28 0>;
+            fault_num = <5>;
+            system_counter = <&sys_counter>;
+            flight_control = <&fc>;
+
+            status = "disabled";
+        };
+
+        watchdog1: watchdog@58008000 {
+            compatible = "arm,corstone-watchdog";
+            reg = <0x58008000 0x2000>;
+            interrupt-parent = <&nvic>;
+            interrupts = <29 0>, <30 0>;
+            fault_num = <5>;
+            system_counter = <&sys_counter>;
+            flight_control = <&fc>;
+
+            status = "disabled";
+        };
+
+        watchdog2: watchdog@5800A000 {
+            compatible = "arm,corstone-watchdog";
+            reg = <0x5800A000 0x2000>;
+            interrupt-parent = <&nvic>;
+            interrupts = <31 0>, <32 0>;
+            fault_num = <5>;
+            system_counter = <&sys_counter>;
+            flight_control = <&fc>;
+
+            status = "disabled";
+        };
+
+        watchdog_slowclk: watchdog@5800F000 {
+            compatible = "arm,cmsdk-syna-watchdog";
+            reg = <0x5800F000 0x1000>;
+            clocks = <&slow_clock>;
+            interrupt-parent = <&nvic>;
+            interrupts = <5 0>, <6 0>;
+            fault_num = <33>;
+            flight_control = <&fc>;
+
+            status = "disabled";
+        };
+    };
+
+    sau_cfg: sau-cfg {
+        compatible = "arm,sau";
+        status = "disabled";
+
+        /* Policy is programmed from C; DTS only describes the SAU enable state. */
+    };
+
+    mpc_sram: mpc@54000000 {
+        compatible = "arm,mpc-sie300";
+        reg = <SRW1500_MPC_SRAM_BASE SRW1500_MPC_REG_SIZE>;
+        status = "disabled";
+        lockdown;
+
+        /* Controlled ranges and NS policy are programmed from C. */
+    };
+
+    mpc_xspi: mpc@58081000 {
+        compatible = "arm,mpc-sie300";
+        reg = <SRW1500_MPC_XSPI_BASE SRW1500_MPC_REG_SIZE>;
+        status = "disabled";
+        lockdown;
+
+        /* Controlled ranges are programmed from C. No xSPI NS region by default. */
+    };
+
+    ppc_p0: ppc-p0 {
+        compatible = "arm,ppc";
+        status = "disabled";
+        ns-reg = <SRW1500_PPC_P0_NS_REG>;
+        priv-reg = <SRW1500_PPC_P0_PRIV_REG>;
+        sresp-reg = <SRW1500_PPC_SECCTRL_SRESP_REG>;
+    };
+
+    ppc_p1: ppc-p1 {
+        compatible = "arm,ppc";
+        status = "disabled";
+        ns-reg = <SRW1500_PPC_P1_NS_REG>;
+        priv-reg = <SRW1500_PPC_P1_PRIV_REG>;
+        sresp-reg = <SRW1500_PPC_SECCTRL_SRESP_REG>;
+    };
+
+    ppc_p2: ppc-p2 {
+        compatible = "arm,ppc";
+        status = "disabled";
+        ns-reg = <SRW1500_PPC_P2_NS_REG>;
+        priv-reg = <SRW1500_PPC_P2_PRIV_REG>;
+        sresp-reg = <SRW1500_PPC_SECCTRL_SRESP_REG>;
+
+        /* SPROT_MBOX and SPROT_OTP NS policy is programmed from C. */
+    };
+
+    ppc_exp0: ppc-exp0 {
+        compatible = "arm,ppc";
+        status = "disabled";
+        ns-reg = <SRW1500_PPC_EXP0_NS_REG>;
+        priv-reg = <SRW1500_PPC_EXP0_PRIV_REG>;
+        sresp-reg = <SRW1500_PPC_EXP_SRESP_REG>;
+    };
+
+    ppc_exp1: ppc-exp1 {
+        compatible = "arm,ppc";
+        status = "disabled";
+        ns-reg = <SRW1500_PPC_EXP1_NS_REG>;
+        priv-reg = <SRW1500_PPC_EXP1_PRIV_REG>;
+        sresp-reg = <SRW1500_PPC_EXP_SRESP_REG>;
+    };
+
+    tgu_itcm: tgu@e001e500 {
+        compatible = "arm,tgu-armv8-m";
+        reg = <SRW1500_TGU_ITCM_BASE SRW1500_TGU_REG_SIZE>;
+        status = "disabled";
+    };
+
+	tgu_dtcm: tgu@e001e600 {
+		compatible = "arm,tgu-armv8-m";
+		reg = <SRW1500_TGU_DTCM_BASE SRW1500_TGU_REG_SIZE>;
+		status = "disabled";
+	};
+
+    trng0: rng@5001D000 {
+        compatible = "snps,dwc-trng";
+        reg = <0x5001D000 0x1000>;
+        clocks = <&clkctrl SYNA_TRNG_CLK>;
+        resets = <&reset SYNA_TRNG_RST>;
+        status = "disabled";
+    };
+};
+
+&nvic {
+    arm,num-irq-priority-bits = <3>;
+};

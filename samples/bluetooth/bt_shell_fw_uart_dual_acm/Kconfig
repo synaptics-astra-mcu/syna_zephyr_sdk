@@ -1,0 +1,13 @@
+mainmenu "BT shell + FW UART dual ACM sample"
+
+source "Kconfig.zephyr"
+source "samples/subsys/usb/common/Kconfig.sample_usbd"
+
+menu "BT shell + FW UART dual ACM sample"
+
+config FW_UART_LOG_LEVEL
+	int "FW UART log level"
+	range 0 4
+	default 0
+
+endmenu

@@ -1,0 +1,34 @@
+# Copyright (c) 2026 Synaptics Incorporated
+# SPDX-License-Identifier: Apache-2.0
+
+config CLOCK_CONTROL_SYNA_SL_PLL
+	bool "Synaptics SL family SoCs ACPU domain pll Driver"
+	default y
+	depends on DT_HAS_SYNA_SL_PLL_ENABLED
+	help
+	  Enable ACPU domain pll support for Synaptics SL family SoCs.
+
+config CLOCK_CONTROL_SYNA_SL_CLK
+	bool "Synaptics SL family SoCs ACPU domain CLK Driver"
+	default y
+	depends on DT_HAS_SYNA_SL_CLK_ENABLED
+	depends on CLOCK_CONTROL_SYNA_SL_PLL
+	help
+	  Enable ACPU domain clk support for Synaptics SL family SoCs.
+
+if CLOCK_CONTROL_SYNA_SL_CLK
+config CLOCK_CONTROL_SYNA_SL_CLK_INIT_PRIORITY
+	int "Synaptics SL family SoCs ACPU domain CLK driver init priority"
+	default 31
+	help
+	  Synaptics SL family SoCs ACPU domain clk driver initialization priority.
+	  This should be lower than the priority of PLL driver.
+endif # CLOCK_CONTROL_SYNA_SL_CLK
+
+config CLOCK_CONTROL_SYNA_SL_GATECLK
+	bool "Synaptics SL family SoCs ACPU domain GATECLK Driver"
+	default y
+	depends on DT_HAS_SYNA_SL_GATECLK_ENABLED
+	depends on CLOCK_CONTROL_SYNA_SL_CLK
+	help
+	  Enable ACPU domain gateclk support for Synaptics SL family SoCs.

@@ -1,0 +1,10 @@
+# Copyright (c) 2026 Synaptics Incorporated
+# SPDX-License-Identifier: Apache-2.0
+
+config ENTROPY_DWC_TRNG
+	bool "Synopsys DesignWare TRNG"
+	default y
+	depends on DT_HAS_SNPS_DWC_TRNG_ENABLED
+	select ENTROPY_HAS_DRIVER
+	help
+	  Enable support for the Synopsys DesignWare TRNG.

@@ -1,0 +1,9 @@
+/*
+ * Enable USB Video class node for the mipi_capture_to_enc sample.
+ */
+
+/ {
+	uvc: uvc {
+		compatible = "zephyr,uvc-device";
+	};
+};

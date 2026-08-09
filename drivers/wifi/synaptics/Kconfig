@@ -1,0 +1,35 @@
+# Copyright 2026 Synaptics Incorporated
+# SPDX-License-Identifier: Apache-2.0
+
+menuconfig WIFI_SYNA
+	bool "Synaptics VEROS SoC Wi-Fi support"
+	select NET_L2_ETHERNET
+	select NET_L2_WIFI_MGMT
+	select WIFI_USE_NATIVE_NETWORKING
+	help
+	  Synaptics Wi-Fi & BT combos.
+
+config SYNA_WIFI_INIT_PRIORITY
+	int "Wi-Fi driver init priority"
+	default SDHC_INIT_PRIORITY
+	depends on WIFI_SYNA
+	help
+	  Wi-Fi device driver initialization priority.
+	  Do not mess with it unless you know what you are doing.
+	  Note that the priority needs to be lower than the net stack
+	  so that it can start before the networking sub-system.
+
+choice
+    prompt "Select WiFi SoC"
+    default WIFI_4612
+    depends on WIFI_SYNA
+
+config WIFI_4381
+    bool "WIFI_4381"
+
+config WIFI_43711
+    bool "WIFI_43711"
+
+config WIFI_4612
+    bool "WIFI_4612"
+endchoice

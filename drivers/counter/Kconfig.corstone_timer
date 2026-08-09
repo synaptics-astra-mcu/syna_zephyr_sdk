@@ -1,0 +1,13 @@
+# Corstone Timer
+
+# Copyright (c) 2026 Synaptics Incorporated
+# SPDX-License-Identifier: Apache-2.0
+
+config COUNTER_CORSTONE_TIMER
+    bool "ARM Corstone Timer (user-space counter)"
+    default y
+	  depends on DT_HAS_ARM_CORSTONE_TIMER_ENABLED
+    depends on COUNTER_CORSTONE_SYSCOUNTER
+    help
+      Enable the Corstone timer driver which uses the shared system counter
+      as a timebase and provides software alarms for user-space apps.

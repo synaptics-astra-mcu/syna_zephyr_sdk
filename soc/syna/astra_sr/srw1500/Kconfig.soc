@@ -1,0 +1,40 @@
+# Copyright (c) 2026 Synaptics Incorporated
+# SPDX-License-Identifier: Apache-2.0
+
+config SOC_SERIES_SRW15xx
+	bool
+	select SOC_FAMILY_SYNA_SR
+
+config SOC_SERIES
+	default "srw15xx" if SOC_SERIES_SRW15xx
+
+config SOC_SRW1500
+    bool
+    select SOC_SERIES_SRW15xx
+    select ARM
+    select CPU_CORTEX_M52
+    select CPU_HAS_ARM_MPU
+    select ARCH_HAS_USERSPACE
+    select CLOCK_CONTROL_FIXED_RATE_CLOCK if CLOCK_CONTROL
+    select CLOCK_CONTROL
+
+config OTP_PROVISIONED_ENABLED
+    bool "OTP Provisioned (v1)"
+    depends on SOC_SRW1500
+    default n
+    help
+        Enable for OTP provisioned devices using v1 provisioning.
+
+config OTP_PROVISIONED_V2_ENABLED
+    bool "OTP Provisioned (v2)"
+    depends on SOC_SRW1500
+    default n
+    help
+        Enable for OTP provisioned devices using v2 provisioning.
+
+config OTP_PROVISIONED_DISABLED
+    bool "OTP Provisioning Disabled"
+    depends on SOC_SRW1500
+    default y
+    help
+        Use this for devices without OTP provisioning.

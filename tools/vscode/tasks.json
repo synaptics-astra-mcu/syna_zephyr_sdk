@@ -1,0 +1,21 @@
+{
+    // See https://go.microsoft.com/fwlink/?LinkId=733558
+    // for the documentation about the tasks.json format
+    "version": "2.0.0",
+    "tasks": [
+      {
+        "label": "Build sample app",                                // ✅ Corrected label
+        "type": "shell",
+        "command": "./build_app.sh",
+        "options": {
+          "cwd": "${workspaceFolder}/zephyr_srsdk"   // ✅ Valid path
+        },
+        "group": {
+          "kind": "build",                                    // ✅ Inside the task object
+          "isDefault": true
+        },
+        "problemMatcher": []                                  // ✅ OK to leave empty
+      },             
+    ]
+  }
+  

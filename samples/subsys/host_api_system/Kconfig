@@ -1,0 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+
+mainmenu "Host API System Sample"
+
+source "Kconfig.zephyr"

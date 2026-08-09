@@ -1,0 +1,39 @@
+&{/chosen} {
+    zephyr,console = &ns16550_lp_uart;
+};
+
+&ns16550_uart0 {
+    status = "disabled";
+};
+
+&ns16550_lp_uart {
+    /* TX-only bring-up: route LP UART TX on the AON GPO1 pad. */
+    pinctrl-0 = <&uart_lp_tx>;
+    pinctrl-names = "default";
+    status = "okay";
+};
+
+&user_button {
+    status = "disabled";
+};
+
+&buttons {
+    status = "disabled";
+};
+
+&led_controller_0 {
+    status = "disabled";
+};
+
+&i2c1 {
+    status = "disabled";
+};
+
+&gpio_exp0 {
+    status = "disabled";
+};
+
+&ipc0 {
+    /* Must match the M55 build: 512 bytes MTU per direction. */
+    shared-memory-size = <0x400>;
+};
