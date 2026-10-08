@@ -1,0 +1,19 @@
+# Copyright (c) 2026 Synaptics Incorporated
+# SPDX-License-Identifier: Apache-2.0
+
+description: ARM Corstone Timer
+
+compatible: "arm,corstone-timer"
+
+include: base.yaml
+
+properties:
+  reg:
+    required: true
+
+  system_counter:
+    type: phandle
+    required: true
+
+  interrupts:
+    required: true

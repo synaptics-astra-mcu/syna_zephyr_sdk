@@ -1,0 +1,94 @@
+#include <zephyr/dt-bindings/gpio/gpio.h>
+#include <zephyr/dt-bindings/memory-attr/memory-attr-arm.h>
+
+/ {
+	reserved-memory {
+		#address-cells = <1>;
+		#size-cells = <1>;
+		ranges;
+
+		jpeg_encoder_mem: jpeg-encoder-memory@b4900000 {
+			compatible = "zephyr,memory-region", "mmio-sram";
+			reg = <0xB4900000 0x9D800>; /* 0x4000 + 0x7e900 (960x540 RAW8) + 0x1af00 (max JPEG) */
+			zephyr,memory-region = "JPEG_ENCODER_MEM";
+			zephyr,memory-attr = <DT_MEM_ARM_MPU_RAM_NOCACHE>;
+		};
+	};
+
+	lp_jpeg0: lp-enc-video {
+		compatible = "syna,enc-video";
+		status = "okay";
+		interrupt-parent = <&nvic>;
+		/*
+		 * This JPEG encoder flow uses all three underlying IRQ lines:
+		 * 102 = FRAME_PROCESSING_DONE, 103 = FMIN1_FRAME_STORED,
+		 * 109 = c0 / status events.
+		 */
+		interrupts = <102 0>, <103 0>, <109 0>;
+		interrupt-names = "frame-done", "fmin1-stored", "status";
+
+		/*
+		 * Build-time selectable mode.
+		 *
+		 * Define ENC_MEMORY_INPUT via DTS_EXTRA_CPPFLAGS to switch the
+		 * encoder to reserved-memory input mode (static raw in memory).
+		 */
+#ifdef ENC_MEMORY_INPUT
+		mode = <1>; /* memory-input mode */
+#else
+		mode = <0>;
+#endif
+
+		/* JPEG encoder reserved memory for raw input and JPEG output buffers. */
+		memory-region = <&jpeg_encoder_mem>;
+		/* Reserve programmer area (SRSDK default is 0x4000). */
+		frame-raw-offset = <0x4000>;
+
+#ifdef ENC_MEMORY_INPUT
+		/* Raw input (960x540 = 0x7E900 bytes) starts at frame-raw-offset. */
+		max-jpeg-size = <0x1af00>;
+#else
+		max-jpeg-size = <0x20000>;
+#endif
+
+		port {
+			lp_jpeg0_in: endpoint {
+				remote-endpoint-label = "ov02c10_out";
+				bus-type = <4>;
+				clock-lane = <0>;
+				data-lanes = <1>;
+			};
+		};
+
+	};
+};
+
+	&i2c1 {
+		ov02c10: ov02c10@36 {
+			compatible = "ovti,ov02c10";
+			reg = <0x36>;
+#ifdef ENC_MEMORY_INPUT
+			status = "disabled";
+#else
+			status = "okay";
+#endif
+
+		pinctrl-0 = <&clkout_0>;
+		pinctrl-names = "default";
+
+		powerdown-gpios = <&gpio_exp0 8 GPIO_ACTIVE_HIGH>;
+		shutdown-gpios = <&gpio_exp0 13 GPIO_ACTIVE_HIGH>;
+
+		mclk-control-reg = <0x50330044>;
+		mclk-control-val = <0x0000000b>;
+
+		port {
+			ov02c10_out: endpoint {
+				bus-type = <4>;
+				clock-lane = <0>;
+				data-lanes = <1>;
+				remote-endpoint-label = "lp_jpeg0_in";
+			};
+		};
+	};
+};

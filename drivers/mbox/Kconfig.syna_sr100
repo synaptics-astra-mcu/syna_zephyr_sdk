@@ -1,0 +1,9 @@
+# Copyright (C) 2026 Synaptics Incorporated. All rights reserved.
+# SPDX-License-Identifier: Apache-2.0
+
+config MBOX_SYNA_SR100
+	bool "Synaptics SR100 IPC mailbox driver"
+	default y
+	depends on DT_HAS_SYNA_MBOX_SR100_ENABLED
+	help
+	  Driver for Synaptics SR100 IPC/mailbox between cores

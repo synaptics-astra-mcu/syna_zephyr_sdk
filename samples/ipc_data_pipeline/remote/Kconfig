@@ -1,0 +1,19 @@
+# Copyright (c) 2025 Synaptics Incorporated
+# SPDX-License-Identifier: Apache-2.0
+
+config IPC_CLIENT_LOG_EVERY_N
+	int "CLIENT process log every N messages"
+	range 1 1000
+	default 1
+	help
+	  Print receive/send INFO logs from the CLIENT process task every N
+	  processed mailbox messages. Set to 1 to log every message.
+
+config IPC_CLIENT_LOG_HEXDUMP
+	bool "Enable CLIENT process payload hexdump logging"
+	default y
+	help
+	  Enables LOG_HEXDUMP_INF for controller_rx_buf in the CLIENT process
+	  task. Disable to reduce log bandwidth and CPU load.
+
+source "Kconfig.zephyr"

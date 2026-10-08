@@ -1,0 +1,13 @@
+name: Synaptics SL2610 RDK
+type: mcu
+arch: arm
+toolchain:
+  - zephyr
+  - gnuarmemb
+supported:
+  - uart
+  - gpio
+  - i2c
+  - spi
+  - flash
+vendor: synaptics

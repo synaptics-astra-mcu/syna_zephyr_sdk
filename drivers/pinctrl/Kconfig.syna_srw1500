@@ -1,0 +1,9 @@
+# Copyright (c) 2026 Synaptics Incorporated
+# SPDX-License-Identifier: Apache-2.0
+
+config PINCTRL_SYNA_SRW1500
+	bool "Pin controller driver for Synaptics SRW1500 MCU"
+	default y
+	depends on DT_HAS_SYNA_SRW1500_PINCTRL_ENABLED
+	help
+	  Enable pin controller driver for Synaptics SRW1500 MCU

@@ -1,0 +1,19 @@
+#
+# Copyright 2026 Synaptics Incorporated
+#
+# SPDX-License-Identifier: Apache-2.0
+#
+
+sample:
+  name: SR100 DMIC
+tests:
+  sample.drivers.dmic_shell:
+    build_only: true
+    platform_allow:
+      - sr100_rdk/sr100/m55
+    tags:
+      - audio
+      - dmic
+      - shell
+    extra_args:
+      - DTC_OVERLAY_FILE=boards/sr100_rdk_sr100_m55.overlay

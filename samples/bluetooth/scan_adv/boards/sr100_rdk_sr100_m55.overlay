@@ -1,0 +1,39 @@
+/*
+ * Copyright (c) 2026 Synaptics Incorporated
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
+/ {
+	chosen {
+		zephyr,bt-hci = &bt_hci_uart;
+	};
+};
+
+&ns16550_uart0 {
+	status = "okay";
+	current-speed = <115200>;
+	hw-flow-control;
+	pinctrl-0 = <&uart0_tx_c &uart0_rx_c &uart0_cts &uart0_rts>;
+	pinctrl-names = "default";
+
+	bt_hci_uart: bt_hci_uart {
+		compatible = "zephyr,bt-hci-uart";
+		status = "okay";
+
+		bt_hci_syna: bt-hci {
+			compatible = "syna,bt-hci-uart";
+			status = "okay";
+			bt-reg-on-gpios = <&gpioa 25 GPIO_ACTIVE_HIGH>;
+		};
+	};
+};
+
+/*
+ * Extend SRAM to cover the full VM0 region (0x33ea0000..0x33F00000 = 384KB).
+ * The BT HOST stack + patchram together require more than the 128KB default.
+ */
+&sram0 {
+	reg = <0x33ea0000 DT_SIZE_K(384)>;
+	ranges = <0x0 0x33ea0000 DT_SIZE_K(384)>;
+};

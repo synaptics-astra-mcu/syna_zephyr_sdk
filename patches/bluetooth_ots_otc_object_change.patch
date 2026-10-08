@@ -1,0 +1,286 @@
+diff --git a/include/zephyr/bluetooth/services/ots.h b/include/zephyr/bluetooth/services/ots.h
+index a4c48a538a6..d6b606ec069 100644
+--- a/include/zephyr/bluetooth/services/ots.h
++++ b/include/zephyr/bluetooth/services/ots.h
+@@ -817,6 +817,12 @@ struct bt_ots *bt_ots_free_instance_get(void);
+ #define BT_OTS_STOP                       0
+ #define BT_OTS_CONTINUE                   1
+
++/** @brief Object Changed flag bits (OTS spec 3.1.4) */
++#define BT_OTS_OBJECT_CHANGED_FLAG_CONTENT    BIT(0)
++#define BT_OTS_OBJECT_CHANGED_FLAG_METADATA   BIT(1)
++#define BT_OTS_OBJECT_CHANGED_FLAG_DELETED    BIT(2)
++#define BT_OTS_OBJECT_CHANGED_FLAG_SOURCE_SERVER 0
++
+ /* TODO: Merge server and client instance as opaque type */
+ /** @brief OTS client instance */
+ struct bt_ots_client {
+@@ -832,11 +838,14 @@ struct bt_ots_client {
+ 	uint16_t obj_id_handle;
+ 	uint16_t oacp_handle;
+ 	uint16_t olcp_handle;
++	uint16_t obj_changed_handle;
+
+ 	struct bt_gatt_subscribe_params oacp_sub_params;
+ 	struct bt_gatt_discover_params oacp_sub_disc_params;
+ 	struct bt_gatt_subscribe_params olcp_sub_params;
+ 	struct bt_gatt_discover_params olcp_sub_disc_params;
++	struct bt_gatt_subscribe_params obj_changed_sub_params;
++	struct bt_gatt_discover_params obj_changed_sub_disc_params;
+
+ 	struct bt_gatt_write_params write_params;
+ 	struct bt_gatt_read_params read_proc;
+@@ -926,6 +935,20 @@ struct bt_ots_client_cb {
+ 	 */
+ 	void (*obj_checksum_calculated)(struct bt_ots_client *ots_inst, struct bt_conn *conn,
+ 					int err, uint32_t checksum);
++
++	/** @brief Callback function when an Object Changed indication is received.
++	 *
++	 *  Called when the OTS server sends an Object Changed indication,
++	 *  notifying the client that an object has been created, deleted,
++	 *  or its content/metadata has been modified.
++	 *
++	 *  @param ots_inst  Pointer to the OTC instance.
++	 *  @param conn      The connection to the peer device.
++	 *  @param flags     Object Changed flags (BT_OTS_OBJECT_CHANGED_FLAG_*).
++	 *  @param id        The Object ID of the affected object.
++	 */
++	void (*obj_changed)(struct bt_ots_client *ots_inst, struct bt_conn *conn,
++			    uint8_t flags, uint64_t id);
+ };
+
+ /** @brief Register an Object Transfer Service Instance.
+diff --git a/subsys/bluetooth/services/ots/Kconfig b/subsys/bluetooth/services/ots/Kconfig
+index f6aa66d7267..408c313d285 100644
+--- a/subsys/bluetooth/services/ots/Kconfig
++++ b/subsys/bluetooth/services/ots/Kconfig
+@@ -66,6 +66,13 @@ config BT_OTS_OLCP_GO_TO_SUPPORT
+ config BT_OTS_OBJ_NAME_WRITE_SUPPORT
+ 	bool "Support object name write"
+
++config BT_OTS_OBJECT_CHANGED_SUPPORT
++	bool "Support Object Changed characteristic"
++	default y
++	help
++	  Enables the Object Changed characteristic that sends indications to
++	  connected clients when an object is created, deleted, or modified.
++
+ endif # BT_OTS
+
+ #### Object Transfer Service Client ################################
+diff --git a/subsys/bluetooth/services/ots/ots.c b/subsys/bluetooth/services/ots/ots.c
+index b59d416858a..01a573baafb 100644
+--- a/subsys/bluetooth/services/ots/ots.c
++++ b/subsys/bluetooth/services/ots/ots.c
+@@ -295,6 +295,8 @@ static ssize_t ots_obj_prop_read(struct bt_conn *conn,
+ 				 sizeof(ots->cur_obj->metadata.props));
+ }
+
++static void ots_obj_changed_send(struct bt_ots *ots, uint64_t id, uint8_t flags);
++
+ int bt_ots_obj_add_internal(struct bt_ots *ots, struct bt_conn *conn,
+ 			    const struct bt_ots_obj_add_param *param,
+ 			    struct bt_gatt_ots_object **obj)
+@@ -358,6 +360,9 @@ int bt_ots_obj_add_internal(struct bt_ots *ots, struct bt_conn *conn,
+ 		*obj = new_obj;
+ 	}
+
++	ots_obj_changed_send(ots, new_obj->id,
++			     BT_OTS_OBJECT_CHANGED_FLAG_CONTENT);
++
+ 	return 0;
+ }
+
+@@ -423,6 +428,8 @@ int bt_ots_obj_delete(struct bt_ots *ots, uint64_t id)
+ 		}
+ 	}
+
++	ots_obj_changed_send(ots, obj->id, BT_OTS_OBJECT_CHANGED_FLAG_DELETED);
++
+ 	err = bt_gatt_ots_obj_manager_obj_delete(obj);
+ 	if (err) {
+ 		return err;
+@@ -458,6 +465,74 @@ static void olcp_indicate_work_handler(struct k_work *work)
+ 	bt_gatt_indicate(NULL, &ots->olcp_ind.params);
+ }
+
++static void changed_indicate_work_handler(struct k_work *work)
++{
++	struct bt_gatt_ots_indicate *ind = CONTAINER_OF(work, struct bt_gatt_ots_indicate, work);
++	struct bt_ots *ots = CONTAINER_OF(ind, struct bt_ots, changed_ind);
++
++	bt_gatt_indicate(NULL, &ots->changed_ind.params);
++}
++
++static void ots_changed_cfg_changed(const struct bt_gatt_attr *attr, uint16_t value)
++{
++	struct bt_gatt_ots_indicate *changed_ind =
++		CONTAINER_OF((struct bt_gatt_ccc_managed_user_data *)attr->user_data,
++			     struct bt_gatt_ots_indicate, ccc);
++
++	LOG_DBG("Object Changed CCCD value: 0x%04X", value);
++
++	changed_ind->is_enabled = false;
++	if (value == BT_GATT_CCC_INDICATE) {
++		changed_ind->is_enabled = true;
++	}
++}
++
++static void ots_obj_changed_send(struct bt_ots *ots, uint64_t id, uint8_t flags)
++{
++	const struct bt_gatt_attr *changed_attr = NULL;
++
++	if (!IS_ENABLED(CONFIG_BT_OTS_OBJECT_CHANGED_SUPPORT)) {
++		return;
++	}
++
++	if (!ots->changed_ind.is_enabled) {
++		LOG_DBG("Object Changed indication not enabled by client");
++		return;
++	}
++
++	/* Find the Object Changed characteristic value attribute */
++	for (size_t i = 0; i < ots->service->attr_count; i++) {
++		const struct bt_gatt_attr *attr = &ots->service->attrs[i];
++
++		if (attr->uuid != NULL &&
++		    !bt_uuid_cmp(attr->uuid, BT_UUID_OTS_CHANGED)) {
++			changed_attr = attr;
++			break;
++		}
++	}
++
++	if (!changed_attr) {
++		LOG_ERR("Object Changed characteristic attribute not found");
++		return;
++	}
++
++	/* Build Object Changed value: Flags (1 byte) + Object ID (6 bytes) */
++	ots->changed_ind.res[0] = flags;
++	sys_put_le48(id, &ots->changed_ind.res[1]);
++
++	memset(&ots->changed_ind.params, 0, sizeof(ots->changed_ind.params));
++	memcpy(&ots->changed_ind.attr, changed_attr, sizeof(ots->changed_ind.attr));
++	ots->changed_ind.params.attr = &ots->changed_ind.attr;
++	ots->changed_ind.params.data = ots->changed_ind.res;
++	ots->changed_ind.params.len = BT_OTS_OBJ_ID_SIZE + 1;
++
++	k_work_submit(&ots->changed_ind.work);
++
++	char id_str[BT_OTS_OBJ_ID_STR_LEN];
++	bt_ots_obj_id_to_str(id, id_str, sizeof(id_str));
++	LOG_DBG("Object Changed indication sent: id=%s flags=0x%02x", id_str, flags);
++}
++
+ int bt_ots_init(struct bt_ots *ots,
+ 		     struct bt_ots_init_param *ots_init)
+ {
+@@ -523,6 +598,10 @@ int bt_ots_init(struct bt_ots *ots,
+ 	k_work_init(&ots->oacp_ind.work, oacp_indicate_work_handler);
+ 	k_work_init(&ots->olcp_ind.work, olcp_indicate_work_handler);
+
++	if (IS_ENABLED(CONFIG_BT_OTS_OBJECT_CHANGED_SUPPORT)) {
++		k_work_init(&ots->changed_ind.work, changed_indicate_work_handler);
++	}
++
+ 	LOG_DBG("Initialized OTS");
+
+ 	return 0;
+@@ -544,6 +623,17 @@ int bt_ots_init(struct bt_ots *ots,
+ 	#define BT_OTS_OBJ_NAME_GATT_WRITE (NULL)
+ #endif
+
++#if defined(CONFIG_BT_OTS_OBJECT_CHANGED_SUPPORT)
++#define BT_GATT_OTS_CHANGED_ATTRS(_ots)				\
++	BT_GATT_CHARACTERISTIC(BT_UUID_OTS_CHANGED,		\
++		BT_GATT_CHRC_INDICATE,				\
++		BT_GATT_PERM_NONE, NULL, NULL, &_ots),		\
++	BT_GATT_CCC_MANAGED(&_ots.changed_ind.ccc,		\
++		BT_GATT_PERM_READ | BT_GATT_PERM_WRITE)
++#else
++#define BT_GATT_OTS_CHANGED_ATTRS(_ots)
++#endif
++
+ #define BT_GATT_OTS_ATTRS(_ots) {					\
+ 	BT_GATT_OTS_SERVICE(BT_UUID_OTS),				\
+ 	BT_GATT_CHARACTERISTIC(BT_UUID_OTS_FEATURE,			\
+@@ -575,7 +665,8 @@ int bt_ots_init(struct bt_ots *ots,
+ 		BT_GATT_PERM_WRITE, NULL,				\
+ 		bt_gatt_ots_olcp_write, &_ots),				\
+ 	BT_GATT_CCC_MANAGED(&_ots.olcp_ind.ccc,				\
+-		BT_GATT_PERM_READ | BT_GATT_PERM_WRITE)			\
++		BT_GATT_PERM_READ | BT_GATT_PERM_WRITE),		\
++	BT_GATT_OTS_CHANGED_ATTRS(_ots)				\
+ }
+
+ #define BT_GATT_OTS_INSTANCE_LIST_SIZE	(ARRAY_SIZE(ots_instances))
+@@ -684,6 +775,11 @@ static int bt_gatt_ots_instances_prepare(void)
+ 			bt_gatt_ots_oacp_cfg_changed;
+ 		instance->olcp_ind.ccc.cfg_changed =
+ 			bt_gatt_ots_olcp_cfg_changed;
++
++		if (IS_ENABLED(CONFIG_BT_OTS_OBJECT_CHANGED_SUPPORT)) {
++			instance->changed_ind.ccc.cfg_changed =
++				ots_changed_cfg_changed;
++		}
+ 	}
+
+ 	return 0;
+diff --git a/subsys/bluetooth/services/ots/ots_client.c b/subsys/bluetooth/services/ots/ots_client.c
+index 3840b5ee34f..ddd090506a7 100644
+--- a/subsys/bluetooth/services/ots/ots_client.c
++++ b/subsys/bluetooth/services/ots/ots_client.c
+@@ -419,6 +419,31 @@ static void oacp_ind_handler(struct bt_conn *conn,
+ 	}
+ }
+
++static void obj_changed_ind_handler(struct bt_conn *conn,
++				    struct bt_ots_client *otc_inst,
++				    const void *data, uint16_t length)
++{
++	struct net_buf_simple net_buf;
++
++	if (length < (sizeof(uint8_t) + BT_OTS_OBJ_ID_SIZE)) {
++		LOG_DBG("Invalid Object Changed indication length: %u", length);
++		return;
++	}
++
++	net_buf_simple_init_with_data(&net_buf, (void *)data, length);
++
++	uint8_t flags = net_buf_simple_pull_u8(&net_buf);
++	uint64_t obj_id = net_buf_simple_pull_le48(&net_buf);
++
++	char id_str[BT_OTS_OBJ_ID_STR_LEN];
++	bt_ots_obj_id_to_str(obj_id, id_str, sizeof(id_str));
++	LOG_INF("Object Changed indication: id=%s flags=0x%02x", id_str, flags);
++
++	if (otc_inst->cb->obj_changed) {
++		otc_inst->cb->obj_changed(otc_inst, conn, flags, obj_id);
++	}
++}
++
+ uint8_t bt_ots_client_indicate_handler(struct bt_conn *conn,
+ 				       struct bt_gatt_subscribe_params *params,
+ 				       const void *data, uint16_t length)
+@@ -448,6 +473,8 @@ uint8_t bt_ots_client_indicate_handler(struct bt_conn *conn,
+ 			olcp_ind_handler(conn, inst->otc_inst, data, length);
+ 		} else if (handle == inst->otc_inst->oacp_handle) {
+ 			oacp_ind_handler(conn, inst->otc_inst, data, length);
++		} else if (handle == inst->otc_inst->obj_changed_handle) {
++			obj_changed_ind_handler(conn, inst->otc_inst, data, length);
+ 		}
+ 	}
+ 	return BT_GATT_ITER_CONTINUE;
+diff --git a/subsys/bluetooth/services/ots/ots_internal.h b/subsys/bluetooth/services/ots/ots_internal.h
+index 77ca60d9db5..19a2eebba45 100644
+--- a/subsys/bluetooth/services/ots/ots_internal.h
++++ b/subsys/bluetooth/services/ots/ots_internal.h
+@@ -132,6 +132,7 @@ struct bt_ots {
+ 	struct bt_gatt_service *service;
+ 	struct bt_gatt_ots_indicate oacp_ind;
+ 	struct bt_gatt_ots_indicate olcp_ind;
++	struct bt_gatt_ots_indicate changed_ind;
+ 	struct bt_gatt_ots_l2cap l2cap;
+ 	struct bt_ots_cb *cb;
+ 	struct bt_ots_dir_list *dir_list;

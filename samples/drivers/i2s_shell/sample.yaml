@@ -1,0 +1,9 @@
+# SPDX-License-Identifier: Apache-2.0
+
+sample:
+  name: I2S shell
+tests:
+  sample.drivers.i2s_shell:
+    build_only: true
+    platform_allow:
+      - sr100_rdk/sr100/m55

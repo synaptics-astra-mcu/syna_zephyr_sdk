@@ -1,0 +1,8 @@
+# SPDX-License-Identifier: Apache-2.0
+
+config SERVICE_UC_MANAGER_ENABLED
+	bool "UC manager service"
+	depends on SERVICE_HOST_API_ENABLED
+	default y
+	help
+	  Enable the minimal SRSDK-compatible use-case manager Host API service.

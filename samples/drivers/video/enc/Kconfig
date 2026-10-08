@@ -1,0 +1,9 @@
+mainmenu "JPEG encode sample application"
+
+# Pull in Zephyr's Kconfig tree so prj.conf and local sample options share the
+# normal symbol namespace.
+source "Kconfig.zephyr"
+
+menu "JPEG Encoder Sample"
+
+endmenu

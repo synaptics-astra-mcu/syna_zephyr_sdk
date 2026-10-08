@@ -1,0 +1,199 @@
+diff --git a/drivers/usb/udc/udc_dwc2.c b/drivers/usb/udc/udc_dwc2.c
+index 575fd9f91e4..c4f261b6e21 100644
+--- a/drivers/usb/udc/udc_dwc2.c
++++ b/drivers/usb/udc/udc_dwc2.c
+@@ -27,2 +27,5 @@ LOG_MODULE_REGISTER(udc_dwc2, CONFIG_UDC_DRIVER_LOG_LEVEL);
+ 
++#define USB_DWC2_GUSBCFG_USBTRDTIM_POS 10U
++#define USB_DWC2_GUSBCFG_USBTRDTIM_8BIT (9U << USB_DWC2_GUSBCFG_USBTRDTIM_POS)
++
+ enum dwc2_drv_event_type {
+@@ -750,3 +753,3 @@ static void dwc2_prep_rx(const struct device *dev, struct net_buf *buf,
+ 
+-	LOG_INF("Prepare RX 0x%02x doeptsiz 0x%x", cfg->addr, doeptsiz);
++	LOG_DBG("Prepare RX 0x%02x doeptsiz 0x%x", cfg->addr, doeptsiz);
+ }
+@@ -1841,2 +1844,3 @@ static int udc_dwc2_init_controller(const struct device *dev)
+ 	bool hs_phy;
++	bool utmi_phy = false;
+ 
+@@ -1851,2 +1855,8 @@ static int udc_dwc2_init_controller(const struct device *dev)
+ 
++#if DT_HAS_COMPAT_STATUS_OKAY(syna_srw1500_usb)
++	priv->ghwcfg1 = config->ghwcfg1;
++	ghwcfg2 = config->ghwcfg2;
++	ghwcfg3 = config->ghwcfg3;
++	ghwcfg4 = config->ghwcfg4;
++#else
+ 	priv->ghwcfg1 = sys_read32((mem_addr_t)&base->ghwcfg1);
+@@ -1855,2 +1865,3 @@ static int udc_dwc2_init_controller(const struct device *dev)
+ 	ghwcfg4 = sys_read32((mem_addr_t)&base->ghwcfg4);
++#endif
+ 
+@@ -1963,2 +1974,3 @@ static int udc_dwc2_init_controller(const struct device *dev)
+ 	case USB_DWC2_GHWCFG2_HSPHYTYPE_UTMIPLUS:
++		utmi_phy = true;
+ 		gusbcfg |= USB_DWC2_GUSBCFG_PHYSEL_USB20 |
+@@ -1984,2 +1996,11 @@ static int udc_dwc2_init_controller(const struct device *dev)
+ 
++#if DT_HAS_COMPAT_STATUS_OKAY(syna_srw1500_usb)
++	if (utmi_phy) {
++		if (config->phy_utmi_width == 16U) {
++			gusbcfg |= USB_DWC2_GUSBCFG_PHYIF_16_BIT;
++		} else {
++			gusbcfg |= USB_DWC2_GUSBCFG_USBTRDTIM_8BIT;
++		}
++	}
++#else
+ 	if (usb_dwc2_get_ghwcfg4_phydatawidth(ghwcfg4)) {
+@@ -1987,2 +2008,3 @@ static int udc_dwc2_init_controller(const struct device *dev)
+ 	}
++#endif
+ 
+@@ -3051,7 +3073,9 @@ static void udc_dwc2_isr_handler(const struct device *dev)
+ 
+-			/* Notify the stack */
+-			udc_set_suspended(dev, true);
+-			udc_submit_event(dev, UDC_EVT_SUSPEND, 0);
++			/* Notify the stack once for each suspend state transition. */
++			if (!udc_is_suspended(dev)) {
++				udc_set_suspended(dev, true);
++				udc_submit_event(dev, UDC_EVT_SUSPEND, 0);
+ 
+-			request_hibernation(priv);
++				request_hibernation(priv);
++			}
+ 		}
+@@ -3377,3 +3401,5 @@ static const struct udc_api udc_dwc2_api = {
+ 		.ghwcfg2 = DT_INST_PROP(n, ghwcfg2),				\
++		.ghwcfg3 = DT_INST_PROP_OR(n, ghwcfg3, 0),			\
+ 		.ghwcfg4 = DT_INST_PROP(n, ghwcfg4),				\
++		.phy_utmi_width = DT_INST_PROP_OR(n, phy_utmi_width, 0),		\
+ 	};									\
+diff --git a/drivers/usb/udc/udc_dwc2.h b/drivers/usb/udc/udc_dwc2.h
+index 77be96adaa5..689dd3ec321 100644
+--- a/drivers/usb/udc/udc_dwc2.h
++++ b/drivers/usb/udc/udc_dwc2.h
+@@ -54,3 +54,5 @@ struct udc_dwc2_config {
+ 	uint32_t ghwcfg2;
++	uint32_t ghwcfg3;
+ 	uint32_t ghwcfg4;
++	uint32_t phy_utmi_width;
+ };
+diff --git a/drivers/usb/udc/udc_dwc2_vendor_quirks.h b/drivers/usb/udc/udc_dwc2_vendor_quirks.h
+index 3a74d8b30eb..80d43756f03 100644
+--- a/drivers/usb/udc/udc_dwc2_vendor_quirks.h
++++ b/drivers/usb/udc/udc_dwc2_vendor_quirks.h
+@@ -774,2 +774,112 @@ DT_INST_FOREACH_STATUS_OKAY(QUIRK_SYNA_SR100_USB_DEFINE)
+ 
++#if DT_HAS_COMPAT_STATUS_OKAY(syna_srw1500_usb)
++
++#include <zephyr/drivers/clock_control.h>
++#include <zephyr/drivers/reset.h>
++#include <zephyr/sys/sys_io.h>
++#include <soc_regs.h>
++
++struct syna_srw1500_usb_resources {
++	struct usb_dwc2_reg *base;
++	mem_addr_t wrapper_ctrl1;
++	const struct device *clock_dev;
++	clock_control_subsys_t clock_id;
++	struct reset_dt_spec phy_reset;
++	struct reset_dt_spec core_ahb_reset;
++};
++
++static inline void srw1500_usb_delay(uint32_t count)
++{
++	while (count-- != 0U) {
++		__asm__ volatile("nop");
++	}
++}
++
++static inline int srw1500_usb_pre_enable(
++	const struct syna_srw1500_usb_resources *resources)
++{
++	int ret;
++
++	if (!device_is_ready(resources->clock_dev) ||
++	    !device_is_ready(resources->phy_reset.dev) ||
++	    !device_is_ready(resources->core_ahb_reset.dev)) {
++		return -ENODEV;
++	}
++
++	ret = clock_control_on(resources->clock_dev, resources->clock_id);
++	if (ret != 0) {
++		return ret;
++	}
++
++	sys_set_bits((mem_addr_t)&resources->base->dctl, USB_DWC2_DCTL_SFTDISCON);
++	k_busy_wait(250000);
++
++	ret = reset_line_assert_dt(&resources->phy_reset);
++	if (ret != 0) {
++		return ret;
++	}
++	srw1500_usb_delay(10000);
++
++	ret = reset_line_deassert_dt(&resources->phy_reset);
++	if (ret != 0) {
++		return ret;
++	}
++	srw1500_usb_delay(20000);
++
++	sys_write32(SRW1500_USB_DEVICE_CTRL1, resources->wrapper_ctrl1);
++	srw1500_usb_delay(50000);
++
++	ret = reset_line_assert_dt(&resources->core_ahb_reset);
++	if (ret != 0) {
++		return ret;
++	}
++	srw1500_usb_delay(10000);
++
++	ret = reset_line_deassert_dt(&resources->core_ahb_reset);
++	if (ret != 0) {
++		return ret;
++	}
++	srw1500_usb_delay(50000);
++
++	sys_set_bits((mem_addr_t)&resources->base->gotgctl,
++		     SRW1500_USB_BVALOEN | SRW1500_USB_BVALOVAL);
++
++	return 0;
++}
++
++static inline int srw1500_usb_init_caps(const struct device *dev)
++{
++	struct udc_data *data = dev->data;
++
++	data->caps.hs = true;
++
++	return 0;
++}
++
++#define QUIRK_SYNA_SRW1500_USB_DEFINE(n)                                      \
++	static const struct syna_srw1500_usb_resources resources_##n = {       \
++		.base = (struct usb_dwc2_reg *)                                  \
++			DT_INST_REG_ADDR_BY_NAME(n, core),                        \
++		.wrapper_ctrl1 = DT_INST_REG_ADDR_BY_NAME(n, wrapper_ctrl1),     \
++		.clock_dev = DEVICE_DT_GET(DT_INST_CLOCKS_CTLR(n)),             \
++		.clock_id =                                                     \
++			(clock_control_subsys_t)DT_INST_CLOCKS_CELL(n, clkid),   \
++		.phy_reset = RESET_DT_SPEC_INST_GET_BY_IDX(n, 0),                \
++		.core_ahb_reset = RESET_DT_SPEC_INST_GET_BY_IDX(n, 1),           \
++	};                                                                      \
++	                                                                        \
++	static int srw1500_usb_pre_enable_##n(const struct device *dev)         \
++	{                                                                       \
++		ARG_UNUSED(dev);                                                 \
++		return srw1500_usb_pre_enable(&resources_##n);                   \
++	}                                                                       \
++	                                                                        \
++	const struct dwc2_vendor_quirks dwc2_vendor_quirks_##n = {              \
++		.caps = srw1500_usb_init_caps,                                  \
++		.pre_enable = srw1500_usb_pre_enable_##n,                        \
++	};
++DT_INST_FOREACH_STATUS_OKAY(QUIRK_SYNA_SRW1500_USB_DEFINE)
++
++#endif /* DT_HAS_COMPAT_STATUS_OKAY(syna_srw1500_usb) */
++
+ /* Add next vendor quirks definition above this line */

@@ -1,0 +1,26 @@
+# Copyright 2026, Synaptics Incorporated
+# SPDX-License-Identifier: Apache-2.0
+
+if BOARD_SR100_RDK
+
+config APP_M4
+	bool "Build Zephyr M4 image"
+	default n
+	help
+	  Build the M4 companion image as part of the SR100 sysbuild. When
+	  enabled, sysbuild adds the M4 image and enforces M4-first
+	  configure/flash order relative to the M55 application image.
+
+config APP_M4_SOURCE_DIR
+	string "Source directory of the M4 Zephyr application"
+	depends on APP_M4
+	default "${ZEPHYR_BASE}/samples/subsys/shell/shell_module"
+	help
+	  Absolute path to the M4 application source directory.
+
+endif # BOARD_SR100_RDK
+
+# Default MCUboot mode for this platform
+choice MCUBOOT_MODE
+	default MCUBOOT_MODE_RAM_LOAD
+endchoice

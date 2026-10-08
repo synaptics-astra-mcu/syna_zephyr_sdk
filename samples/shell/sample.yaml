@@ -1,0 +1,12 @@
+sample:
+  name: syna_shell
+
+tests:
+  sample.syna.shell:
+    tags:
+      - shell
+      - syna
+    integration_platforms:
+      - sr100_rdk/sr100/m55
+    extra_args:
+      - DTC_OVERLAY_FILE=sr100_rdk_m55.overlay

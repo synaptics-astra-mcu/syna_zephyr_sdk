@@ -1,0 +1,15 @@
+# Copyright 2026 Synaptics Incorporated
+# SPDX-License-Identifier: Apache-2.0
+
+title: Synaptics SL261x Ethernet Controller
+
+description: |
+  Contains the Ethernet MAC and the MDIO as child nodes.
+
+compatible: "syna,sl261x-ethernet-controller"
+
+include: base.yaml
+
+properties:
+  reg:
+    required: true

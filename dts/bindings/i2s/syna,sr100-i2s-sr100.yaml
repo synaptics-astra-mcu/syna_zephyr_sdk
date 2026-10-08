@@ -1,0 +1,57 @@
+#
+# Copyright 2026, Synaptics Incorporated
+#
+# SPDX-License-Identifier: Apache-2.0
+#
+
+description: Synaptics SR100 I2S controller
+
+compatible: "syna,sr100-i2s-sr100"
+
+include:
+  - i2s-controller.yaml
+  - pinctrl-device.yaml
+
+properties:
+  reg:
+    required: true
+    description: |
+      Three register ranges are required:
+      - "i2s": SR100 I2S controller registers
+      - "global": SR global control registers
+      - "lps": SR LPS gear1 registers
+
+  reg-names:
+    required: true
+    const: ["i2s", "global", "lps"]
+
+  interrupts:
+    required: true
+
+  clocks:
+    required: true
+    description: |
+      Three clock IDs are expected in order:
+      cfg clock, tx pclk, rx pclk.
+
+  clock-names:
+    required: true
+    const: ["cfg", "tx", "rx"]
+
+  dmas:
+    required: true
+    type: phandle-array
+
+  dma-names:
+    required: true
+    const: ["tx", "rx"]
+
+  resets:
+    required: false
+    type: phandle-array
+
+  pinctrl-0:
+    required: true
+
+  pinctrl-names:
+    required: true

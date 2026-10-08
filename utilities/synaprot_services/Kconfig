@@ -1,0 +1,8 @@
+# Copyright (C) 2026 Synaptics Incorporated. All rights reserved.
+# SPDX-License-Identifier: Apache-2.0
+
+if SYNAPROT_SERVICE
+
+rsource "Kconfig.syna_srw1500"
+
+endif # SYNAPROT_SERVICE

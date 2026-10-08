@@ -1,0 +1,11 @@
+# Counter configuration options
+
+# Copyright (c) 2026 Synaptics Incorporated
+# SPDX-License-Identifier: Apache-2.0
+
+if COUNTER
+
+rsource "Kconfig.corstone_syscounter"
+rsource "Kconfig.corstone_timer"
+
+endif # COUNTER

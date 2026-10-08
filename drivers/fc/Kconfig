@@ -1,0 +1,8 @@
+# Copyright (c) 2026 Synaptics Incorporated
+# SPDX-License-Identifier: Apache-2.0
+
+menuconfig FLIGHT_CONTROL
+	bool "Flight control driver"
+	depends on DT_HAS_SYNA_FLIGHT_CONTROL_ENABLED
+	help
+	  Include support for flight control block.

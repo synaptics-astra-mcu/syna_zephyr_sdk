@@ -1,0 +1,32 @@
+# Copyright 2026, Synaptics Incorporated
+#
+# SPDX-License-Identifier: Apache-2.0
+
+sample:
+  name: Synaptics CAN
+  description: Exercise Synaptics CAN/CAN FD controller loopback coverage.
+
+common:
+  tags:
+    - drivers
+    - can
+  depends_on: can
+  filter: dt_chosen_enabled("zephyr,canbus") and dt_compat_enabled("syna,can")
+  build_only: true
+
+tests:
+  sample.drivers.can.syna.can0: {}
+
+  sample.drivers.can.syna.can1:
+    extra_args:
+      - DTC_OVERLAY_FILE=boards/sl2619_rdk_sl2619_m52_can1.overlay
+
+  sample.drivers.can.syna.can0.rtr:
+    extra_configs:
+      - CONFIG_CAN_ACCEPT_RTR=y
+
+  sample.drivers.can.syna.can1.rtr:
+    extra_args:
+      - DTC_OVERLAY_FILE=boards/sl2619_rdk_sl2619_m52_can1.overlay
+    extra_configs:
+      - CONFIG_CAN_ACCEPT_RTR=y

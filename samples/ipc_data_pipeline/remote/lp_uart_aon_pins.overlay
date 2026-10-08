@@ -1,0 +1,12 @@
+/*
+ * Copyright (c) 2026 Synaptics Incorporated
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
+/* Opt-in: LP UART on the AON pads (GPIO_2/GPIO_3) instead of the board default
+ * GLOBAL pads. Apply with -DEXTRA_DTC_OVERLAY_FILE=lp_uart_aon_pins.overlay.
+ */
+&ns16550_lp_uart {
+    pinctrl-0 = <&uart_lp_tx &uart_lp_rx>;
+};

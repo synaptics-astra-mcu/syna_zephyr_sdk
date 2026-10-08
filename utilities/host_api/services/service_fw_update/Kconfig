@@ -1,0 +1,19 @@
+# SPDX-License-Identifier: Apache-2.0
+
+config SERVICE_FW_UPDATE_ENABLED
+	bool "Host API firmware update service"
+	depends on SERVICE_HOST_API_ENABLED
+	depends on MODULE_FW_UPDATE_ENABLED
+	default n
+	help
+	  Enable the Host API firmware update service.
+
+config SERVICE_FW_UPDATE_STACK_SIZE
+	int "FW update service thread stack size"
+	depends on SERVICE_FW_UPDATE_ENABLED
+	default 4096
+
+config SERVICE_FW_UPDATE_TASK_PRIORITY
+	int "FW update service thread priority"
+	depends on SERVICE_FW_UPDATE_ENABLED
+	default 5

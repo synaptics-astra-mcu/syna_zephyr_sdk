@@ -1,0 +1,15 @@
+# Copyright (c) 2026 Synaptics, Inc.
+# SPDX-License-Identifier: Apache-2.0
+
+config I2S_SYNA_SR100
+	bool "Synaptics SR100 I2S driver"
+	default y
+	depends on DT_HAS_SYNA_SR100_I2S_SR100_ENABLED && CLOCK_CONTROL
+	select DMA
+	select PINCTRL
+	help
+	  Enable support for the Synaptics SR100 I2S controller.
+
+	  The driver supports the Zephyr I2S API using the SR100 PCM
+	  controller registers, DMA channels, and pinctrl configuration
+	  described by devicetree.

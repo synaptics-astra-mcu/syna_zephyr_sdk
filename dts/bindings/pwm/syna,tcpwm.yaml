@@ -1,0 +1,50 @@
+description: Synaptics TCPWM controller
+
+compatible: "syna,tcpwm"
+
+include: [pwm-controller.yaml, base.yaml, pinctrl-device.yaml, reset-device.yaml]
+
+properties:
+  reg:
+    required: true
+
+  gbl:
+    type: phandle
+    required: true
+    description: Global register syscon used for PWM power and output routing.
+
+  interrupts:
+    required: true
+
+  clocks:
+    required: true
+
+  resets:
+    required: true
+
+  pinctrl-0:
+    required: true
+
+  pinctrl-names:
+    required: true
+
+  clock-frequency:
+    type: int
+    required: true
+    description: Input clock frequency of the SPWM counter, in Hz.
+
+  capture-channel:
+    type: int
+    description: TCPWM group reserved for input capture.
+
+  capture-input:
+    type: int
+    description: External SM_CAP input index routed by the capture pinmux.
+
+  "#pwm-cells":
+    const: 3
+
+pwm-cells:
+  - channel
+  - period
+  - flags

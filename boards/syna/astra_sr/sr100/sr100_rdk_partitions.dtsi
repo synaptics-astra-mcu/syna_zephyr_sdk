@@ -1,0 +1,46 @@
+/*
+ * Copyright (c) 2026 Synaptics Incorporated
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
+&xspi {
+	partitions {
+		compatible = "fixed-partitions";
+		#address-cells = <1>;
+		#size-cells = <1>;
+
+		boot_partition: partition@0 {
+			label = "mcuboot";
+			reg = <0x00000000 DT_SIZE_K(64)>;
+			read-only;
+		};
+
+		/* M55 images */
+		slot0_partition: partition@50000 {
+			label = "m55-0";
+			reg = <0x00050000 DT_SIZE_K(1472)>;
+		};
+
+		slot1_partition: partition@1c0000 {
+			label = "m55-1";
+			reg = <0x001c0000 DT_SIZE_K(1472)>;
+		};
+
+		/* M4 images */
+		slot2_partition: partition@330000 {
+			label = "m4-0";
+			reg = <0x00330000 DT_SIZE_K(1472)>;
+		};
+
+		slot3_partition: partition@4a0000 {
+			label = "m4-1";
+			reg = <0x004a0000 DT_SIZE_K(1472)>;
+		};
+
+		scratch_partition: partition@150000 {
+			label = "image-scratch";
+			reg = <0x00150000 DT_SIZE_K(256)>;
+		};
+	};
+};

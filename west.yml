@@ -1,0 +1,33 @@
+manifest:
+  projects:
+    - name: zephyr
+      url: https://github.com/zephyrproject-rtos/zephyr
+      revision: v4.4.1
+      path: zephyr
+      west-commands: scripts/west-commands.yml
+      import:
+        name-allowlist:
+          - cmsis_6
+          - cmsis-dsp
+          - liblc3
+          - libsbc
+          - littlefs
+          - fatfs
+          - hal_ethos_u
+          - tflite-micro
+          - hostap
+          - tf-psa-crypto
+          - mcuboot
+          - mbedtls
+          - mbedtls-3.6 # Kept for TF-M migration needs
+          - zcbor
+          - mldsa-native
+
+    - name: srsdk_tools
+      url: https://github.com/synaptics-astra-mcu/srsdk_tools.git
+      revision: main
+      path: srsdk_tools
+
+  self:
+    path: zephyr_srsdk
+    west-commands: scripts/west-commands.yml

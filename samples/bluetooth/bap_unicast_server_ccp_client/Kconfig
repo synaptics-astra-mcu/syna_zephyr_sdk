@@ -1,0 +1,14 @@
+# Copyright (c) 2026 Synaptics Incorporated
+#
+# SPDX-License-Identifier: Apache-2.0
+
+mainmenu "Bluetooth: BAP Unicast Server + CCP Call Control Client"
+
+config INFO_REPORTING_INTERVAL
+	int "Number of SDUs received between each information report"
+	default 1000
+	help
+	  How often received audio stream stats are logged.
+	  Set to 0 to disable.
+
+source "Kconfig.zephyr"

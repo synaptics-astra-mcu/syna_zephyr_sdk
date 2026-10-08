@@ -1,0 +1,25 @@
+# Copyright (c) 2026 Synaptics Incorporated
+# SPDX-License-Identifier: Apache-2.0
+
+description: Synaptics srw1500 Clock Controller
+
+compatible: "syna,srw1500-clock"
+
+include: [clock-controller.yaml, base.yaml]
+
+properties:
+  reg:
+    required: true
+
+  reg-names:
+    required: true
+
+  clock-frequency:
+    type: int
+    description: Input crystal frequency in Hz.
+
+  "#clock-cells":
+    const: 1
+
+clock-cells:
+  - clkid

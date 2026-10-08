@@ -1,0 +1,58 @@
+# Copyright (c) 2026 Synaptics Incorporated
+#
+# SPDX-License-Identifier: Apache-2.0
+
+mainmenu "Bluetooth: BAP Unicast Server + Broadcast Sink"
+
+# ── Broadcast Sink scan options ──────────────────────────────────────────────
+
+config SCAN_OFFLOAD
+	bool "Wait for a Broadcast Assistant before scanning"
+	default n
+
+config SCAN_SELF
+	bool "Scan for Broadcast Sources without a Broadcast Assistant"
+	default y
+
+config SCAN_DELAY
+	int "Delay before starting scan (seconds)"
+	range 0 255
+	default 5
+	depends on SCAN_SELF
+
+config TARGET_BROADCAST_NAME
+	string "Target Broadcast Device Name substring (empty = any)"
+	default ""
+
+config MAX_CODEC_FRAMES_PER_SDU
+	int "Maximum codec frames per SDU"
+	default 1
+	range 1 255
+
+config ENABLE_LC3
+	bool "Enable LC3 codec decoding"
+	default n
+
+config USE_USB_AUDIO_OUTPUT
+	bool "Use USB Audio as output"
+	default n
+
+config USE_CODEC_AUDIO_OUTPUT
+	bool "Use Codec Audio as output"
+	default n
+
+config USE_SPECIFIC_BROADCAST_CHANNEL
+	bool "Sync to a specific Broadcast Channel Audio Location"
+	default n
+
+config TARGET_BROADCAST_CHANNEL
+	int "Broadcast Channel Audio Location to sync to"
+	range 0 3
+	default 1
+	depends on USE_SPECIFIC_BROADCAST_CHANNEL
+
+config INFO_REPORTING_INTERVAL
+	int "SDUs received between each report (0 = disabled)"
+	default 1000
+
+source "Kconfig.zephyr"

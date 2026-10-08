@@ -1,0 +1,23 @@
+# Copyright (C) 2026 Synaptics Incorporated. All rights reserved.
+# SPDX-License-Identifier: Apache-2.0
+
+config SYNAPROT_MBOX
+	bool "Synaptics SPROT_MBOX driver"
+	default y
+	depends on DT_HAS_SYNA_SYNAPROT_MBOX_ENABLED
+	help
+	  Polled H2S/S2H mailbox to the secure co-processor. There is
+	  no interrupt line for this block; responses are retrieved via
+	  mbox_synaprot_poll_response() (see
+	  drivers/synaprot_mbox/mbox_synaprot.h).
+
+if SYNAPROT_MBOX
+config SYNAPROT_MBOX_LOCK_TIMEOUT_MS
+	int "Timeout waiting for the SPROT_MBOX interface lock [ms]"
+	default 100
+
+config SYNAPROT_MBOX_TX_TIMEOUT_US
+	int "Timeout waiting for the co-processor to consume a H2S message [us]"
+	default 1000000
+
+endif # SYNAPROT_MBOX

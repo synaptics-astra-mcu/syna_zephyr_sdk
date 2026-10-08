@@ -1,0 +1,9 @@
+# Copyright (C) 2026 Synaptics Incorporated. All rights reserved.
+# SPDX-License-Identifier: Apache-2.0
+
+config MODULE_SPROT_SERVICES_SRW1500
+	bool "Synatptics Synaprot services"
+	default y
+    depends on SYNAPROT_MBOX
+	help
+	  Enable Synaprot services.

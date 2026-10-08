@@ -1,0 +1,65 @@
+# Copyright (c) 2025 Synaptics Incorporated
+# SPDX-License-Identifier: Apache-2.0
+
+config FLASH_CAD_XSPI
+	bool "Cadence Quad XPI Flash driver"
+	default y
+	depends on DT_HAS_CDNS_XSPI_ENABLED
+	select FLASH_HAS_PAGE_LAYOUT
+	select FLASH_HAS_DRIVER_ENABLED
+	select FLASH_HAS_EXPLICIT_ERASE
+	select FLASH_JESD216
+	select PINCTRL
+	help
+	  Enable Cadence XSPI support.
+
+if FLASH_CAD_XSPI
+
+menu "Cadence xSPI read-while-write"
+
+config CDNS_XSPI_RWW
+	bool "Enable Cadence xSPI program/erase suspend time slicing"
+	default y
+	help
+	  Enables RWW time slicing using program/erase suspend and resume
+	  commands (B0h/4Fh suspend and 30h/CFh resume in OPI). The driver
+	  periodically suspends a program/erase operation, returns the controller
+	  to DIRECT mode for an XIP window, then resumes the operation.
+	  Set CONFIG_CDNS_XSPI_RWW=n in the board or application config to
+	  compile out this feature and use the blocking program/erase path.
+
+config CDNS_XSPI_RWW_TICK_US
+	int "RWW base tick in microseconds"
+	default 125
+	depends on CDNS_XSPI_RWW
+
+config CDNS_XSPI_RWW_ACTIVE_TICKS
+	int "Ticks per program/erase progress window"
+	default 20
+	depends on CDNS_XSPI_RWW
+
+config CDNS_XSPI_RWW_XIP_TICKS
+	int "Ticks per suspended XIP window"
+	default 13
+	depends on CDNS_XSPI_RWW
+
+config CDNS_XSPI_RWW_SUSPEND_TIMEOUT_US
+	int "Suspend acknowledgement timeout in microseconds"
+	default 40
+	depends on CDNS_XSPI_RWW
+	help
+	  Default timing is suitable for devices such as MX25UM25645G, which
+	  specifies a maximum tPSL/tESL of 25 us. 40 us leaves margin while still
+	  detecting a failed suspend quickly.
+
+config CDNS_XSPI_RWW_NOPS_PER_US
+	int "Calibrated delay-loop iterations per microsecond"
+	default 64
+	depends on CDNS_XSPI_RWW
+	help
+	  Must be calibrated on SRW1500. The active flash window cannot call
+	  Zephyr timing services because those services may execute from XIP.
+
+endmenu
+
+endif # FLASH_CAD_XSPI

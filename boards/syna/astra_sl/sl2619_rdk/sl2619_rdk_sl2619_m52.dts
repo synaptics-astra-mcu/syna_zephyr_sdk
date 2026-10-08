@@ -1,0 +1,264 @@
+/*
+ * Copyright (c) 2026 Synaptics Incorporated
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
+/dts-v1/;
+#include <syna/astra_sl/sl261x/sl261x_m52.dtsi>
+#include <syna/astra_sl/sl261x/sl261x_pinctrl.dtsi>
+#include <zephyr/dt-bindings/gpio/gpio.h>
+#include <zephyr/dt-bindings/memory-attr/memory-attr-arm.h>
+
+/ {
+	model = "Synaptics SL2610 RDK M52 Core";
+	compatible = "syna,sl261x-rdk";
+
+	chosen {
+		zephyr,console = &ns16550_uart0;
+		zephyr,shell-uart = &ns16550_uart0;
+		zephyr,sram = &dtcm;
+		zephyr,flash = &itcm;
+		zephyr,code-partition = &itcm;
+		zephyr,arch-cpu = &cpu_m52;
+		zephyr,flash-controller = &xspi;
+	};
+
+	aliases {
+		i2c-0 = &i2c0;
+	};
+
+	ddr_nc: memory@b0000000 {
+		compatible = "zephyr,memory-region";
+		reg = <0xb0000000 DT_SIZE_K(4)>;
+		zephyr,memory-region = "DDR_NC";
+		zephyr,memory-attr = <DT_MEM_ARM_MPU_RAM_NOCACHE>;
+	};
+
+	ddr: memory@b0001000 {
+		compatible = "zephyr,memory-region";
+		reg = <0xb0001000 DT_SIZE_K(1020)>;
+		zephyr,memory-region = "DDR";
+		zephyr,memory-attr = <DT_MEM_ARM_MPU_RAM>;
+	};
+
+	npu_nc: memory@d7600000 { // as alternative to DDR
+		compatible = "zephyr,memory-region";
+		reg = <0xd7600000 DT_SIZE_K(4)>;
+		zephyr,memory-region = "NPU_NC";
+		zephyr,memory-attr = <DT_MEM_ARM_MPU_RAM_NOCACHE>;
+	};
+
+	npu: memory@d7601000 {
+		compatible = "zephyr,memory-region";
+		reg = <0xd7601000 DT_SIZE_K(508)>;
+		zephyr,memory-region = "NPU";
+		zephyr,memory-attr = <DT_MEM_ARM_MPU_RAM>;
+	};
+};
+
+&xspi {
+	status = "okay";
+	pinctrl-0 = <&sm_xspi_data0 &sm_xspi_data1 &sm_xspi_data2 &sm_xspi_data3 &sm_xspi_dqs
+		     &sm_xspi_clk &sm_xspi_clk_n &sm_xspi_cs0>;
+	pinctrl-names = "default";
+	use-direct-mode;
+	erase-block-size = <4096>;
+	write-block-size = <1>;
+
+	flash1: mt25qu02g@0 {
+		compatible = "micron,mt25qu02g";
+		reg = <0>;
+		size = <DT_SIZE_M(256*8)>; /* in bits */
+		status = "okay";
+	};
+};
+
+&sm_xspi_data0 {
+	drive-strength = <3>;
+};
+
+&sm_xspi_data1 {
+	drive-strength = <3>;
+};
+
+&sm_xspi_data2 {
+	drive-strength = <3>;
+};
+
+&sm_xspi_data3 {
+	drive-strength = <3>;
+};
+
+&sm_xspi_dqs {
+	drive-strength = <3>;
+};
+
+&sm_xspi_clk {
+	drive-strength = <3>;
+};
+
+&sm_xspi_clk_n {
+	drive-strength = <3>;
+};
+
+&sm_xspi_cs0 {
+	drive-strength = <3>;
+};
+
+&i2c0 {
+	status = "okay";
+	clock-frequency = <I2C_BITRATE_STANDARD>;
+	pinctrl-0 = <&sm_tw0_sda_b &sm_tw0_scl_b>;
+	pinctrl-names = "default";
+
+	ina3221@42 {
+		compatible = "ti,ina3221";
+		reg = <0x42>;
+		shunt-resistors = <10000 10000 10000>;
+	};
+};
+
+&sm_tw0_sda_b {
+	bias-pull-up;
+	drive-strength = <8>;
+};
+
+&sm_tw0_scl_b {
+	bias-pull-up;
+	drive-strength = <8>;
+};
+
+&i2c1 {
+	status = "okay";
+	clock-frequency = <I2C_BITRATE_STANDARD>;
+	pinctrl-0 = <&sm_tw1_sda &sm_tw1_scl>;
+	pinctrl-names = "default";
+};
+
+&sm_tw1_sda {
+	bias-pull-up;
+	drive-strength = <8>;
+};
+
+&sm_tw1_scl {
+	bias-pull-up;
+	drive-strength = <8>;
+};
+
+&ns16550_uart0 {
+	pinctrl-0 = <&sm_urt0_rxd &sm_urt0_txd>;
+	pinctrl-names = "default";
+	clock-frequency = <25000000>;
+	current-speed = <115200>;
+	dlf = <0>;
+	status = "okay";
+};
+
+&gpio0 {
+	status = "okay";
+};
+
+&gpio1 {
+	status = "okay";
+};
+
+&gpio2 {
+	status = "okay";
+};
+
+&gpio3 {
+	status = "okay";
+};
+
+&spim {
+	status = "okay";
+	pinctrl-0 = <&sm_spi1_clk &sm_spi1_sdi &sm_spi1_sdo &sm_spi1_ss3n>;
+	pinctrl-names = "default";
+};
+
+&hwinfo0 {
+	status = "okay";
+};
+
+&rgmii2_td0 {
+	drive-strength = <7>;
+};
+
+&rgmii2_td1 {
+	drive-strength = <7>;
+};
+
+&rgmii2_td2 {
+	drive-strength = <7>;
+};
+
+&rgmii2_td3 {
+	drive-strength = <7>;
+};
+
+&rgmii2_rd0 {
+	drive-strength = <7>;
+};
+
+&rgmii2_rd1 {
+	drive-strength = <7>;
+};
+
+&rgmii2_rd2 {
+	drive-strength = <7>;
+};
+
+&rgmii2_rd3 {
+	drive-strength = <7>;
+};
+
+&rgmii2_rxc {
+	drive-strength = <7>;
+};
+
+&rgmii2_txc {
+	drive-strength = <7>;
+};
+
+&rgmii2_txctl {
+	drive-strength = <7>;
+};
+
+&rgmii2_rxctl {
+	drive-strength = <7>;
+};
+
+&rgmii_mdc_b {
+	drive-strength = <7>;
+};
+
+&rgmii_mdio_b {
+	drive-strength = <7>;
+};
+
+&mac1 {
+	status = "okay";
+	pinctrl-0 = <&rgmii2_td0 &rgmii2_td1 &rgmii2_td2 &rgmii2_td3
+		     &rgmii2_rd0 &rgmii2_rd1 &rgmii2_rd2 &rgmii2_rd3
+		     &rgmii2_rxc &rgmii2_txc &rgmii2_txctl &rgmii2_rxctl>;
+	pinctrl-names = "default";
+	phy-connection-type = "rgmii";
+	phy-handle = <&eth_phy>;
+};
+
+&mdio1 {
+	status = "okay";
+	pinctrl-0 = <&rgmii_mdc_b &rgmii_mdio_b &sm_gpio35>;
+	pinctrl-names = "default";
+	csr-clock-index = <2>;
+
+	eth_phy: ethernet-phy@2 {
+		compatible = "ethernet-phy";
+		reg = <0x2>;
+		reset-gpios = <&gpio3 3 GPIO_ACTIVE_HIGH>;
+		reset-assert-duration-us = <20000>;
+		reset-deassertion-timeout-ms = <100>;
+		default-speeds = "1000BASE Full-Duplex";
+	};
+};

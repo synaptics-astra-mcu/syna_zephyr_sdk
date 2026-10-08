@@ -1,0 +1,44 @@
+/*
+ * Copyright (c) 2026 Synaptics Incorporated
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ */
+ 
+ / {
+	chosen {
+		zephyr,flash = &xspi;
+		zephyr,flash-controller = &xspi;
+		zephyr,code-partition = &boot_partition;
+		/* Must differ from zephyr,console (uart0) or serial_adapter.c #errors. */
+		zephyr,uart-mcumgr = &uart1;
+	};
+};
+
+&uart1 {
+	status = "okay";
+};
+
+&xspi {
+	compatible = "cdns,xspi", "soc-nv-flash";
+	status = "okay";
+
+	partitions {
+		compatible = "fixed-partitions";
+		#address-cells = <1>;
+		#size-cells = <1>;
+
+		boot_partition: partition@2b000 {
+			label = "mcuboot";
+			reg = <0x0002B000 0x00010000>;
+		};
+
+		slot0_partition: partition@72000 {
+			label = "image-0";
+			reg = <0x00072000 0x00280000>;
+		};
+	};
+};
+
+&ppc_p2 {
+    status = "disabled";
+};

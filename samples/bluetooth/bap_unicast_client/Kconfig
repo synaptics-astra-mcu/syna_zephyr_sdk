@@ -1,0 +1,39 @@
+# Copyright (c) 2025 Nordic Semiconductor ASA
+# Copyright (c) 2026 Synaptics Incorporated
+#
+# SPDX-License-Identifier: Apache-2.0
+
+mainmenu "Bluetooth: BAP Unicast Client (SR110 RDK)"
+
+config INFO_REPORTING_INTERVAL
+	int "Number of SDUs received between each information report"
+	default 1000
+	help
+	  Determines how often information about received data is logged.
+	  Set to 0 to disable reporting.
+
+config BT_BAP_AUTO_CONNECT
+	bool "Auto-connect without user interaction"
+	default n
+	help
+	  When enabled, scan_and_connect() selects a device automatically
+	  after the scan timeout without waiting for console input.
+
+	  If CONFIG_BT_BAP_AUTO_CONNECT_ADDR is non-empty, the sample
+	  connects directly to that address (skipping the scan list).
+	  Otherwise it selects the device with the strongest RSSI from
+	  the scan results.
+
+	  Useful for automated testing where no one is at the UART console
+	  to type a device selection.
+
+config BT_BAP_AUTO_CONNECT_ADDR
+	string "Fixed peer Bluetooth address for auto-connect"
+	default ""
+	help
+	  Used only when CONFIG_BT_BAP_AUTO_CONNECT=y.
+	  If non-empty, the sample will connect directly to this address
+	  (format: "XX:XX:XX:XX:XX:XX").
+	  Leave empty to auto-select the device with the strongest RSSI.
+
+source "Kconfig.zephyr"

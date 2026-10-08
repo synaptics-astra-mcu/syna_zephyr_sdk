@@ -1,0 +1,64 @@
+#
+# Copyright 2026 Synaptics Incorporated
+#
+# SPDX-License-Identifier: Apache-2.0
+#
+
+mainmenu "LP Sense DMIC shell sample"
+
+source "Kconfig.zephyr"
+
+menu "LP Sense DMIC Sample"
+
+config DMIC_CAPTURE_BUFFER_KB
+	int "RAM capture buffer size (KiB)"
+	default 2048
+	range 8 2048
+	help
+	  Size of the optional in-memory capture buffer. Capture duration, sample
+	  rate, and channel count are selected through shell command arguments.
+
+config DMIC_SHELL_WRITE_BUFFER_COUNT
+	int "storage write buffer count"
+	range 2 256
+	default 32
+	help
+	  Number of intermediate write buffers used while streaming captured DMIC
+	  data to LittleFS. Larger values tolerate longer storage write latency,
+	  but do not increase sustained storage bandwidth.
+
+config DMIC_SHELL_WRITE_BUFFER_BYTES
+	int "storage write buffer size"
+	range 8192 65536
+	default 16384
+	help
+	  Size of each intermediate storage write buffer.
+
+config AUDIO_DMIC_SYNA_SR100_PCM_WIDTH
+	int
+	default 32
+	help
+	  PCM container width used by the SR100 DMIC shell sample.
+
+config DMIC_SHELL_CAPTURE_STACK_SIZE
+	int "DMIC shell capture stack size"
+	range 2048 16384
+	default 4096
+	help
+	  Stack size for the capture worker thread.
+
+config DMIC_SHELL_WRITER_STACK_SIZE
+	int "DMIC shell writer stack size"
+	range 2048 8192
+	default 4096
+	help
+	  Stack size for the background LittleFS writer thread.
+
+config DMIC_SHELL_PLAY_STACK_SIZE
+	int "DMIC shell playback stack size"
+	range 4096 16384
+	default 12288
+	help
+	  Stack size for the playback worker thread.
+
+endmenu

@@ -1,0 +1,19 @@
+# Copyright (c) 2026 Synaptics Incorporated
+#
+# SPDX-License-Identifier: Apache-2.0
+
+mainmenu "Bluetooth: BAP Unicast Client + Broadcast Source"
+
+config INFO_REPORTING_INTERVAL
+	int "SDUs received between each status report (0 = disabled)"
+	default 1000
+
+config BT_BAP_AUTO_CONNECT
+	bool "Auto-connect without user interaction (unicast client mode)"
+	default n
+
+config BT_BAP_AUTO_CONNECT_ADDR
+	string "Fixed peer BT address for auto-connect"
+	default ""
+
+source "Kconfig.zephyr"

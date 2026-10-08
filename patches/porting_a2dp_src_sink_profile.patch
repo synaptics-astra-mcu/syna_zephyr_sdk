@@ -1,0 +1,644 @@
+From 4335f53715bd7f41e16d3cff005678137c2f6f8a Mon Sep 17 00:00:00 2001
+From: vitoli <vito.li@synaptics.com>
+Date: Wed, 10 Jun 2026 16:40:45 +0800
+Subject: [PATCH] Porting A2DP SRC and A2DP Sink profile
+
+---
+ drivers/bluetooth/hci/h4.c               |  25 +++
+ include/zephyr/bluetooth/classic/a2dp.h  |  14 +-
+ include/zephyr/bluetooth/hci_types.h     |  37 +++++
+ modules/liblc3/CMakeLists.txt            |  10 ++
+ subsys/bluetooth/host/classic/avdtp.c    |   6 +-
+ subsys/bluetooth/host/classic/br.c       | 186 +++++++++++++++++++++++
+ subsys/bluetooth/host/classic/l2cap_br.c |   5 +-
+ subsys/bluetooth/host/classic/sdp.c      |  35 +++--
+ subsys/bluetooth/host/hci_core.c         |  81 +++++-----
+ 9 files changed, 331 insertions(+), 68 deletions(-)
+
+diff --git a/drivers/bluetooth/hci/h4.c b/drivers/bluetooth/hci/h4.c
+index d12676b31b0..95a1e05c653 100644
+--- a/drivers/bluetooth/hci/h4.c
++++ b/drivers/bluetooth/hci/h4.c
+@@ -33,6 +33,21 @@ LOG_MODULE_REGISTER(bt_driver);
+
+ #define DT_DRV_COMPAT zephyr_bt_hci_uart
+
++#if defined(CONFIG_BT_HCI_SNOOP)
++/* Weak defaults allow platform code to provide real snoop handlers. */
++void __weak hci_snoop_tx(const uint8_t *data, uint32_t len)
++{
++	ARG_UNUSED(data);
++	ARG_UNUSED(len);
++}
++
++void __weak hci_snoop_rx(const uint8_t *data, uint32_t len)
++{
++	ARG_UNUSED(data);
++	ARG_UNUSED(len);
++}
++#endif
++
+ struct h4_data {
+ 	struct {
+ 		struct net_buf *buf;
+@@ -371,6 +386,10 @@ static inline void read_payload(const struct device *dev)
+
+ 	reset_rx(h4);
+
++#if defined(CONFIG_BT_HCI_SNOOP)
++	hci_snoop_rx(buf->data, buf->len);
++#endif
++
+ 	LOG_DBG("Putting buf %p to rx fifo", buf);
+ 	k_fifo_put(&h4->rx.fifo, buf);
+ 	k_sem_give(&h4->rx.ready);
+@@ -489,6 +508,12 @@ static int h4_send(const struct device *dev, struct net_buf *buf)
+
+ 	LOG_DBG("buf %p type %u len %u", buf, buf->data[0], buf->len);
+
++	k_sleep(K_MSEC(3));
++
++#if defined(CONFIG_BT_HCI_SNOOP)
++	hci_snoop_tx(buf->data, buf->len);
++#endif
++
+ 	k_fifo_put(&h4->tx.fifo, buf);
+ 	uart_irq_tx_enable(cfg->uart);
+
+diff --git a/include/zephyr/bluetooth/classic/a2dp.h b/include/zephyr/bluetooth/classic/a2dp.h
+index ebf6d088528..4e6e900bc27 100644
+--- a/include/zephyr/bluetooth/classic/a2dp.h
++++ b/include/zephyr/bluetooth/classic/a2dp.h
+@@ -138,13 +138,15 @@ extern "C" {
+ 	static struct bt_a2dp_codec_ie bt_a2dp_ep_cap_ie##_name = {                                \
+ 		.len = BT_A2DP_SBC_IE_LENGTH,                                                      \
+ 		.codec_ie = {A2DP_SBC_SAMP_FREQ_44100 | A2DP_SBC_SAMP_FREQ_48000 |                 \
+-				     A2DP_SBC_CH_MODE_MONO | A2DP_SBC_CH_MODE_STEREO |             \
+-				     A2DP_SBC_CH_MODE_JOINT,                                       \
+-			     A2DP_SBC_BLK_LEN_16 | A2DP_SBC_SUBBAND_8 |                            \
+-				     A2DP_SBC_ALLOC_MTHD_LOUDNESS,                                 \
+-			     18U, 35U}};                                                           \
++				     A2DP_SBC_CH_MODE_MONO | A2DP_SBC_CH_MODE_DUAL |               \
++				     A2DP_SBC_CH_MODE_STEREO | A2DP_SBC_CH_MODE_JOINT,             \
++			     A2DP_SBC_BLK_LEN_4 | A2DP_SBC_BLK_LEN_8 |                             \
++				     A2DP_SBC_BLK_LEN_12 | A2DP_SBC_BLK_LEN_16 |                  \
++				     A2DP_SBC_SUBBAND_4 | A2DP_SBC_SUBBAND_8 |                     \
++				     A2DP_SBC_ALLOC_MTHD_SNR | A2DP_SBC_ALLOC_MTHD_LOUDNESS,      \
++			     2U, 53U}};                                                            \
+ 	static struct bt_a2dp_ep _name =                                                           \
+-		BT_A2DP_SINK_EP_INIT(BT_A2DP_SBC, &bt_a2dp_ep_cap_ie##_name, true)
++		BT_A2DP_SINK_EP_INIT(BT_A2DP_SBC, &bt_a2dp_ep_cap_ie##_name, false)
+
+ /** @brief define the default SBC source endpoint that can be used as bt_a2dp_register_ep's
+  * parameter.
+diff --git a/include/zephyr/bluetooth/hci_types.h b/include/zephyr/bluetooth/hci_types.h
+index 0704e9f0678..456eb612a84 100644
+--- a/include/zephyr/bluetooth/hci_types.h
++++ b/include/zephyr/bluetooth/hci_types.h
+@@ -380,8 +380,20 @@ struct bt_hci_cmd_hdr {
+ #define BT_OGF_INFO                             0x04
+ #define BT_OGF_STATUS                           0x05
+ #define BT_OGF_LE                               0x08
++#define BT_OGF_TESTING                          0x06
+ #define BT_OGF_VS                               0x3f
+
++/* Broadcom vendor-specific HCI commands */
++#define BT_HCI_OP_BCM_WRITE_BD_ADDR             BT_OP(BT_OGF_VS, 0x001)
++#define BT_HCI_OP_BCM_FC18                      BT_OP(BT_OGF_VS, 0x018)
++#define BT_HCI_OP_BCM_FC1D                      BT_OP(BT_OGF_VS, 0x01d)
++#define BT_HCI_OP_BCM_FC27                      BT_OP(BT_OGF_VS, 0x027)
++#define BT_HCI_OP_BCM_FC6E                      BT_OP(BT_OGF_VS, 0x06e)
++#define BT_HCI_OP_BCM_FC79                      BT_OP(BT_OGF_VS, 0x079)
++#define BT_HCI_OP_BCM_FCB7                      BT_OP(BT_OGF_VS, 0x0b7)
++#define BT_HCI_OP_BCM_FCBB                      BT_OP(BT_OGF_VS, 0x0bb)
++#define BT_HCI_OP_BCM_FD53                      BT_OP(BT_OGF_VS, 0x153)
++
+ /* Construct OpCode from OGF and OCF */
+ #define BT_OP(ogf, ocf)                         ((ocf) | ((ogf) << 10))
+
+@@ -685,6 +697,7 @@ struct bt_hci_cp_set_event_mask {
+
+ #define BT_HCI_OP_RESET                         BT_OP(BT_OGF_BASEBAND, 0x0003) /* 0x0c03 */
+
++#define BT_HCI_OP_READ_LOCAL_NAME               BT_OP(BT_OGF_BASEBAND, 0x0014) /* 0x0c14 */
+ #define BT_HCI_OP_WRITE_LOCAL_NAME              BT_OP(BT_OGF_BASEBAND, 0x0013) /* 0x0c13 */
+ struct bt_hci_write_local_name {
+ 	uint8_t local_name[248];
+@@ -904,6 +917,30 @@ struct bt_hci_cp_set_event_mask_page_2 {
+ 	uint8_t  events_page_2[8];
+ } __packed;
+
++/** HCI opcode for Write Extended Inquiry Response. */
++#define BT_HCI_OP_WRITE_EXT_INQUIRY_RESPONSE    BT_OP(BT_OGF_BASEBAND, 0x0052) /* 0x0c52 */
++/** HCI command parameters for Write Extended Inquiry Response. */
++struct bt_hci_cp_write_ext_inquiry_response {
++	uint8_t  fec;
++	uint8_t  data[240];
++} __packed;
++
++/** HCI opcode for Read Inquiry Response Transmit Power Level. */
++#define BT_HCI_OP_READ_INQUIRY_RESPONSE_TX_POWER BT_OP(BT_OGF_BASEBAND, 0x0058) /* 0x0c58 */
++/** HCI command response parameters for Read Inquiry Response Transmit Power Level. */
++struct bt_hci_rp_read_inquiry_response_tx_power {
++	uint8_t  status;
++	int8_t   tx_power;
++} __packed;
++
++#define BT_HCI_OP_WRITE_EXT_INQUIRY_TX_POWER    BT_OP(BT_OGF_BASEBAND, 0x0059) /* 0x0c59 */
++
++/** HCI opcode for Write Simple Pairing Debug Mode. */
++#define BT_HCI_OP_WRITE_SSP_DEBUG_MODE          BT_OP(BT_OGF_TESTING, 0x0004) /* 0x1804 */
++struct bt_hci_cp_write_ssp_debug_mode {
++	uint8_t  mode;
++} __packed;
++
+ #define BT_HCI_OP_LE_WRITE_LE_HOST_SUPP         BT_OP(BT_OGF_BASEBAND, 0x006d) /* 0x0c6d */
+ struct bt_hci_cp_write_le_host_supp {
+ 	uint8_t  le;
+diff --git a/modules/liblc3/CMakeLists.txt b/modules/liblc3/CMakeLists.txt
+index f551bcf896f..5633fae1613 100644
+--- a/modules/liblc3/CMakeLists.txt
++++ b/modules/liblc3/CMakeLists.txt
+@@ -40,4 +40,14 @@ zephyr_library_sources(
+   ${ZEPHYR_LIBLC3_MODULE_DIR}/src/tables.c
+   ${ZEPHYR_LIBLC3_MODULE_DIR}/src/tns.c
+ )
++
++# sns.c generates an oversized stack frame on Cortex-M55 (MVE) when compiled
++# with -ffast-math + -O3, causing VFP VLDR/VSTR SP-relative offsets to exceed
++# the hardware limit of 1020 bytes ("co-processor offset out of range").
++# Override -ffast-math and drop to -O2 for this file only; all other files
++# keep the full flags.
++set_source_files_properties(
++  ${ZEPHYR_LIBLC3_MODULE_DIR}/src/sns.c
++  PROPERTIES COMPILE_OPTIONS "-O2;-fno-fast-math"
++)
+ endif()
+diff --git a/subsys/bluetooth/host/classic/avdtp.c b/subsys/bluetooth/host/classic/avdtp.c
+index ded591857d1..e427b9b6ca7 100644
+--- a/subsys/bluetooth/host/classic/avdtp.c
++++ b/subsys/bluetooth/host/classic/avdtp.c
+@@ -355,6 +355,9 @@ static int avdtp_media_connect(struct bt_avdtp *session, struct bt_avdtp_sep *se
+ 	sep->chan.rx.mtu = BT_L2CAP_RX_MTU;
+ 	sep->chan.chan.ops = &stream_chan_ops;
+ 	sep->chan.required_sec_level = BT_SECURITY_L2;
++	/* psm is set by bt_l2cap_chan_connect and never cleared on disconnect;
++	 * reset it so the channel struct can be reused across AVDTP sessions. */
++	sep->chan.psm = 0;
+
+ 	return bt_l2cap_chan_connect(session->br_chan.chan.conn, &sep->chan.chan,
+ 				     BT_L2CAP_PSM_AVDTP);
+@@ -2675,8 +2678,7 @@ int bt_avdtp_delay_report(struct bt_avdtp *session, struct bt_avdtp_delay_report
+ 		return -ENOTSUP;
+ 	}
+
+-	if (!(param->sep->state & (AVDTP_CONFIGURED | AVDTP_OPENING | AVDTP_OPEN |
+-	      AVDTP_STREAMING))) {
++	if (!(param->sep->state & (AVDTP_OPEN | AVDTP_STREAMING))) {
+ 		return -EINVAL;
+ 	}
+
+diff --git a/subsys/bluetooth/host/classic/br.c b/subsys/bluetooth/host/classic/br.c
+index be1546b4445..3ec72cbdf4e 100644
+--- a/subsys/bluetooth/host/classic/br.c
++++ b/subsys/bluetooth/host/classic/br.c
+@@ -1022,6 +1022,192 @@ int bt_br_init(void)
+ 		}
+ 	}
+
++	/* HCI_Write_Page_Scan_Type: interlaced scan (1) */
++	buf = bt_hci_cmd_alloc(K_FOREVER);
++	if (!buf) {
++		return -ENOBUFS;
++	}
++	net_buf_add_u8(buf, 0x01);
++	err = bt_hci_cmd_send_sync(BT_HCI_OP_WRITE_PAGE_SCAN_TYPE, buf, NULL);
++	if (err) {
++		return err;
++	}
++
++	/* HCI_Write_Inquiry_Scan_Type: interlaced scan (1) */
++	buf = bt_hci_cmd_alloc(K_FOREVER);
++	if (!buf) {
++		return -ENOBUFS;
++	}
++	net_buf_add_u8(buf, 0x01);
++	err = bt_hci_cmd_send_sync(BT_HCI_OP_WRITE_INQUIRY_SCAN_TYPE, buf, NULL);
++	if (err) {
++		return err;
++	}
++
++	/* HCI_Write_Page_Scan_Activity: interval=0x0320, window=0x0012 */
++	{
++		struct bt_hci_cp_write_page_scan_activity *cp;
++		buf = bt_hci_cmd_alloc(K_FOREVER);
++		if (!buf) {
++			return -ENOBUFS;
++		}
++		cp = net_buf_add(buf, sizeof(*cp));
++		cp->interval = sys_cpu_to_le16(0x0320);
++		cp->window = sys_cpu_to_le16(0x0012);
++		err = bt_hci_cmd_send_sync(BT_HCI_OP_WRITE_PAGE_SCAN_ACTIVITY, buf, NULL);
++		if (err) {
++			return err;
++		}
++	}
++
++	/* Broadcom VSC 0xfc79: read command (0 params) — non-fatal */
++	{
++		err = bt_hci_cmd_send_sync(BT_HCI_OP_BCM_FC79, NULL, NULL);
++		if (err) {
++			LOG_WRN("VSC 0xfc79 failed (err %d), continuing", err);
++		}
++	}
++
++	/* HCI_Write_Inquiry_Scan_Activity: interval=0x0800, window=0x0012 */
++	{
++		struct bt_hci_cp_write_inquiry_scan_activity *cp;
++		buf = bt_hci_cmd_alloc(K_FOREVER);
++		if (!buf) {
++			return -ENOBUFS;
++		}
++		cp = net_buf_add(buf, sizeof(*cp));
++		cp->interval = sys_cpu_to_le16(0x0800);
++		cp->window = sys_cpu_to_le16(0x0012);
++		err = bt_hci_cmd_send_sync(BT_HCI_OP_WRITE_INQUIRY_SCAN_ACTIVITY, buf, NULL);
++		if (err) {
++			return err;
++		}
++	}
++
++	/* HCI_Write_Current_IAC_LAP: 1 IAC, GIAC (0x9e8b33) */
++	{
++		struct bt_hci_cp_write_current_iac_lap *cp;
++		buf = bt_hci_cmd_alloc(K_FOREVER);
++		if (!buf) {
++			return -ENOBUFS;
++		}
++		cp = net_buf_add(buf, sizeof(*cp) + sizeof(struct bt_hci_iac_lap));
++		cp->num_current_iac = 1;
++		cp->lap[0].iac[0] = 0x33;
++		cp->lap[0].iac[1] = 0x8b;
++		cp->lap[0].iac[2] = 0x9e;
++		err = bt_hci_cmd_send_sync(BT_HCI_OP_WRITE_CURRENT_IAC_LAP, buf, NULL);
++		if (err) {
++			return err;
++		}
++	}
++
++	/* Read Inquiry Response TX Power, then Write Extended Inquiry Response */
++	{
++		int8_t tx_power = 4;
++
++		buf = NULL;
++		err = bt_hci_cmd_send_sync(BT_HCI_OP_READ_INQUIRY_RESPONSE_TX_POWER, NULL, &buf);
++		if (err == 0 && buf != NULL) {
++			struct bt_hci_rp_read_inquiry_response_tx_power *txp = (void *)buf->data;
++			if (txp->status == 0) {
++				tx_power = txp->tx_power;
++			}
++			net_buf_unref(buf);
++		}
++
++		/* HCI_Write_Extended_Inquiry_Response */
++		{
++			struct bt_hci_cp_write_ext_inquiry_response *cp;
++			uint8_t name_len;
++			uint8_t off = 0;
++
++			buf = bt_hci_cmd_alloc(K_FOREVER);
++			if (!buf) {
++				return -ENOBUFS;
++			}
++			cp = net_buf_add(buf, sizeof(*cp));
++			cp->fec = 0x01;
++			memset(cp->data, 0, sizeof(cp->data));
++
++			name_len = strlen(CONFIG_BT_DEVICE_NAME);
++			if (name_len > 0 && name_len <= (sizeof(cp->data) - 3)) {
++				cp->data[off++] = name_len + 1;
++				cp->data[off++] = 0x09;
++				memcpy(&cp->data[off], CONFIG_BT_DEVICE_NAME, name_len);
++				off += name_len;
++			}
++			if (off <= sizeof(cp->data) - 3) {
++				cp->data[off++] = 2;
++				cp->data[off++] = 0x0a;
++				cp->data[off++] = tx_power;
++			}
++
++			err = bt_hci_cmd_send_sync(BT_HCI_OP_WRITE_EXT_INQUIRY_RESPONSE, buf, NULL);
++			if (err) {
++				return err;
++			}
++		}
++	}
++
++	/* HCI_Write_Simple_Pairing_Debug_Mode: disabled (0) */
++	buf = bt_hci_cmd_alloc(K_FOREVER);
++	if (!buf) {
++		return -ENOBUFS;
++	}
++	net_buf_add_u8(buf, 0x00);
++	err = bt_hci_cmd_send_sync(BT_HCI_OP_WRITE_SSP_DEBUG_MODE, buf, NULL);
++	if (err) {
++		return err;
++	}
++
++	/* HCI_Write_Default_Link_Policy_Settings: Sniff+RoleSwitch enabled, Hold disabled */
++	{
++		struct bt_hci_cp_write_default_link_policy_settings *cp;
++
++		buf = bt_hci_cmd_alloc(K_FOREVER);
++		if (!buf) {
++			return -ENOBUFS;
++		}
++		cp = net_buf_add(buf, sizeof(*cp));
++		cp->default_link_policy_settings = sys_cpu_to_le16(0x0005);
++		err = bt_hci_cmd_send_sync(BT_HCI_OP_WRITE_DEFAULT_LINK_POLICY_SETTINGS, buf, NULL);
++		if (err) {
++			return err;
++		}
++	}
++
++	/* Broadcom VSC 0xfcb7: reset BT controller */
++	{
++		uint8_t params[7] = {0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
++
++		buf = bt_hci_cmd_alloc(K_FOREVER);
++		if (!buf) {
++			return -ENOBUFS;
++		}
++		net_buf_add_mem(buf, params, sizeof(params));
++		err = bt_hci_cmd_send_sync(BT_HCI_OP_BCM_FCB7, buf, NULL);
++		if (err) {
++			LOG_WRN("VSC 0xfcb7 failed (err %d), continuing", err);
++		}
++	}
++
++	/* Broadcom VSC 0xfc27: CODEC config — non-fatal */
++	{
++		uint8_t params[12] = {0x00, 0x57, 0x00, 0x00, 0x60, 0x57,
++				      0x11, 0xae, 0x24, 0x57, 0x00, 0x00};
++
++		buf = bt_hci_cmd_alloc(K_FOREVER);
++		if (!buf) {
++			return -ENOBUFS;
++		}
++		net_buf_add_mem(buf, params, sizeof(params));
++		err = bt_hci_cmd_send_sync(BT_HCI_OP_BCM_FC27, buf, NULL);
++		if (err) {
++			LOG_WRN("VSC 0xfc27 failed (err %d), continuing", err);
++		}
++	}
++
+ 	return 0;
+ }
+
+diff --git a/subsys/bluetooth/host/classic/l2cap_br.c b/subsys/bluetooth/host/classic/l2cap_br.c
+index b2e9fcc6a19..7ad9c4987f4 100644
+--- a/subsys/bluetooth/host/classic/l2cap_br.c
++++ b/subsys/bluetooth/host/classic/l2cap_br.c
+@@ -2779,10 +2779,7 @@ static uint16_t l2cap_br_conf_rsp_opt_flush_timeout(struct bt_l2cap_chan *chan,
+ 		goto done;
+ 	}
+
+-	/* For tx, only support the default value (0xFFFF - infinite amount of retransmissions) */
+-	if (opt_to->timeout != 0xFFFF) {
+-		result = BT_L2CAP_CONF_UNACCEPT;
+-	}
++	/* Accept any valid flush timeout — required for A2DP isochronous media transport */
+
+ done:
+ 	return result;
+diff --git a/subsys/bluetooth/host/classic/sdp.c b/subsys/bluetooth/host/classic/sdp.c
+index e89b463e171..2ebbecd6217 100644
+--- a/subsys/bluetooth/host/classic/sdp.c
++++ b/subsys/bluetooth/host/classic/sdp.c
+@@ -257,9 +257,13 @@ static int bt_sdp_send(struct bt_l2cap_chan *chan, struct net_buf *buf,
+ 	hdr->tid = sys_cpu_to_be16(tid);
+ 	hdr->param_len = sys_cpu_to_be16(param_len);
+
++	LOG_INF("SDP SEND: opcode 0x%02x tid %u len %u chan %p", op, tid, param_len, chan);
+ 	err = bt_l2cap_chan_send(chan, buf);
+ 	if (err < 0) {
++		LOG_ERR("bt_l2cap_chan_send failed op=0x%02x err=%d", op, err);
+ 		net_buf_unref(buf);
++	} else {
++		LOG_INF("SDP SEND: bt_l2cap_chan_send returned 0 (queued)");
+ 	}
+
+ 	return err;
+@@ -1401,7 +1405,7 @@ static uint16_t sdp_svc_search_att_req(struct bt_sdp *sdp, struct net_buf *buf,
+ 	struct net_buf *rsp_buf, *rsp_buf_cpy;
+ 	struct bt_sdp_record *record, *next;
+ 	struct bt_sdp_att_rsp *rsp;
+-	struct bt_sdp_data_elem_seq *seq = NULL;
++	uint8_t *seq = NULL;
+ 	uint16_t max_att_len, res, att_list_len = 0U;
+ 	uint16_t sending_len;
+ 	size_t num_filters;
+@@ -1426,8 +1430,8 @@ static uint16_t sdp_svc_search_att_req(struct bt_sdp *sdp, struct net_buf *buf,
+ 		return BT_SDP_INVALID_SYNTAX;
+ 	}
+
+-	if (max_att_len < sizeof(*seq)) {
+-		LOG_WRN("Invalid maximum attribute byte count %u < %u", max_att_len, sizeof(*seq));
++	if (max_att_len < 2) {
++		LOG_WRN("Invalid maximum attribute byte count %u < %u", max_att_len, 2);
+ 		return BT_SDP_INVALID_SYNTAX;
+ 	}
+
+@@ -1474,13 +1478,13 @@ static uint16_t sdp_svc_search_att_req(struct bt_sdp *sdp, struct net_buf *buf,
+
+ 	/* Add headers only if this is not a partial response */
+ 	if (!cont_state_size) {
+-		seq = net_buf_add(rsp_buf, sizeof(*seq));
+-		seq->type = BT_SDP_SEQ16;
+-		seq->size = 0U;
++		net_buf_add_u8(rsp_buf, BT_SDP_SEQ8);
++		seq = net_buf_add(rsp_buf, sizeof(uint8_t));
++		*seq = 0U;
+
+-		/* 3 bytes for Outer Data Element Sequence declaration */
+-		att_list_len = sizeof(*seq);
+-		max_att_len -= sizeof(*seq);
++		/* 2 bytes for Outer Data Element Sequence declaration */
++		att_list_len = 2;
++		max_att_len -= 2;
+ 	}
+
+ 	rsp_buf_cpy = rsp_buf;
+@@ -1560,9 +1564,12 @@ static uint16_t sdp_svc_search_att_req(struct bt_sdp *sdp, struct net_buf *buf,
+
+ 	rsp->att_list_len = sys_cpu_to_be16(att_list_len);
+ 	if (seq) {
+-		seq->size = sys_cpu_to_be16(state.att_list_size);
++		*seq = (uint8_t)state.att_list_size;
+ 	}
+
++	LOG_INF("SDP SSAR resp: att_list_len=%u att_list_size=%u buf_len=%u",
++		att_list_len, state.att_list_size, rsp_buf->len);
++	LOG_HEXDUMP_INF(rsp_buf->data, rsp_buf->len, "SDP SSAR rsp bytes:");
+ 	LOG_DBG("Sending response, len %u", rsp_buf->len);
+ 	bt_sdp_send(&sdp->chan.chan, rsp_buf, BT_SDP_SVC_SEARCH_ATTR_RSP, tid);
+
+@@ -1608,9 +1615,12 @@ static int bt_sdp_recv(struct bt_l2cap_chan *chan, struct net_buf *buf)
+
+ 	hdr = net_buf_pull_mem(buf, sizeof(*hdr));
+ 	LOG_DBG("Received SDP code 0x%02x len %u", hdr->op_code, buf->len);
++	LOG_INF("SDP RECV: opcode 0x%02x len %u tid %u", hdr->op_code, buf->len, sys_be16_to_cpu(hdr->tid));
++	LOG_HEXDUMP_INF(buf->data, buf->len, "SDP RECV payload:");
+
+ 	if (sys_cpu_to_be16(hdr->param_len) != buf->len) {
+ 		err = BT_SDP_INVALID_PDU_SIZE;
++		LOG_INF("SDP ERR: param_len mismatch (hdr=%u buf=%u)", sys_cpu_to_be16(hdr->param_len), buf->len);
+ 	} else {
+ 		for (i = 0; i < ARRAY_SIZE(handlers); i++) {
+ 			if (hdr->op_code != handlers[i].op_code) {
+@@ -1618,12 +1628,17 @@ static int bt_sdp_recv(struct bt_l2cap_chan *chan, struct net_buf *buf)
+ 			}
+
+ 			err = handlers[i].func(sdp, buf, sys_be16_to_cpu(hdr->tid));
++			LOG_INF("SDP HANDLER: opcode 0x%02x returned err=%u", hdr->op_code, err);
+ 			break;
+ 		}
++		if (i == ARRAY_SIZE(handlers)) {
++			LOG_INF("SDP ERR: no handler for opcode 0x%02x", hdr->op_code);
++		}
+ 	}
+
+ 	if (err) {
+ 		LOG_WRN("SDP error 0x%02x", err);
++		LOG_INF("SDP SEND ERROR RSP: err=0x%02x tid=%u", err, sys_be16_to_cpu(hdr->tid));
+ 		send_err_rsp(chan, err, sys_be16_to_cpu(hdr->tid));
+ 	}
+
+diff --git a/subsys/bluetooth/host/hci_core.c b/subsys/bluetooth/host/hci_core.c
+index 012dc6ed734..fe93447951d 100644
+--- a/subsys/bluetooth/host/hci_core.c
++++ b/subsys/bluetooth/host/hci_core.c
+@@ -2128,9 +2128,10 @@ static int set_flow_control(void)
+ 	}
+
+ 	hbs = net_buf_add(buf, sizeof(*hbs));
+-	(void)memset(hbs, 0, sizeof(*hbs));
+-	hbs->acl_mtu = sys_cpu_to_le16(CONFIG_BT_BUF_ACL_RX_SIZE);
+-	hbs->acl_pkts = sys_cpu_to_le16(BT_BUF_HCI_ACL_RX_COUNT);
++	hbs->acl_mtu = sys_cpu_to_le16(1691);
++	hbs->sco_mtu = 255;
++	hbs->acl_pkts = sys_cpu_to_le16(20);
++	hbs->sco_pkts = sys_cpu_to_le16(10);
+
+ 	err = bt_hci_cmd_send_sync(BT_HCI_OP_HOST_BUFFER_SIZE, buf, NULL);
+ 	if (err) {
+@@ -3530,6 +3531,16 @@ static int common_init(void)
+ 		hci_reset_complete();
+ 	}
+
++	/* Read Local Name */
++	{
++		struct net_buf *buf;
++
++		err = bt_hci_cmd_send_sync(BT_HCI_OP_READ_LOCAL_NAME, NULL, &buf);
++		if (err == 0 && buf != NULL) {
++			net_buf_unref(buf);
++		}
++	}
++
+ 	/* Read Local Supported Features */
+ 	err = bt_hci_cmd_send_sync(BT_HCI_OP_READ_LOCAL_FEATURES, NULL, &rsp);
+ 	if (err) {
+@@ -4015,7 +4026,6 @@ static int set_event_mask(void)
+ {
+ 	struct bt_hci_cp_set_event_mask *ev;
+ 	struct net_buf *buf;
+-	uint64_t mask = 0U;
+
+ 	buf = bt_hci_cmd_alloc(K_FOREVER);
+ 	if (!buf) {
+@@ -4023,53 +4033,27 @@ static int set_event_mask(void)
+ 	}
+
+ 	ev = net_buf_add(buf, sizeof(*ev));
++	sys_put_le64(UINT64_C(0x3DBFFFFFFFFFFFFF), ev->events);
++	return bt_hci_cmd_send_sync(BT_HCI_OP_SET_EVENT_MASK, buf, NULL);
++}
+
+-	if (IS_ENABLED(CONFIG_BT_CLASSIC)) {
+-		/* Since we require LE support, we can count on a
+-		 * Bluetooth 4.0 feature set
+-		 */
+-		mask |= BT_EVT_MASK_INQUIRY_COMPLETE;
+-		mask |= BT_EVT_MASK_CONN_COMPLETE;
+-		mask |= BT_EVT_MASK_CONN_REQUEST;
+-		mask |= BT_EVT_MASK_AUTH_COMPLETE;
+-		mask |= BT_EVT_MASK_REMOTE_NAME_REQ_COMPLETE;
+-		mask |= BT_EVT_MASK_REMOTE_FEATURES;
+-		mask |= BT_EVT_MASK_ROLE_CHANGE;
+-#ifdef CONFIG_BT_POWER_MODE_CONTROL
+-		mask |= BT_EVT_MASK_MODE_CHANGE;
+-#endif /* CONFIG_BT_POWER_MODE_CONTROL */
+-		mask |= BT_EVT_MASK_PIN_CODE_REQ;
+-		mask |= BT_EVT_MASK_LINK_KEY_REQ;
+-		mask |= BT_EVT_MASK_LINK_KEY_NOTIFY;
+-		mask |= BT_EVT_MASK_INQUIRY_RESULT_WITH_RSSI;
+-		mask |= BT_EVT_MASK_REMOTE_EXT_FEATURES;
+-		mask |= BT_EVT_MASK_SYNC_CONN_COMPLETE;
+-		mask |= BT_EVT_MASK_EXTENDED_INQUIRY_RESULT;
+-		mask |= BT_EVT_MASK_IO_CAPA_REQ;
+-		mask |= BT_EVT_MASK_IO_CAPA_RESP;
+-		mask |= BT_EVT_MASK_USER_CONFIRM_REQ;
+-		mask |= BT_EVT_MASK_USER_PASSKEY_REQ;
+-		mask |= BT_EVT_MASK_SSP_COMPLETE;
+-		mask |= BT_EVT_MASK_USER_PASSKEY_NOTIFY;
+-	}
+-
+-	mask |= BT_EVT_MASK_HARDWARE_ERROR;
+-	mask |= BT_EVT_MASK_DATA_BUFFER_OVERFLOW;
+-	mask |= BT_EVT_MASK_LE_META_EVENT;
++static int set_event_mask_page_2(void)
++{
++	struct bt_hci_cp_set_event_mask_page_2 *ev;
++	struct net_buf *buf;
+
+-	if (IS_ENABLED(CONFIG_BT_CONN)) {
+-		mask |= BT_EVT_MASK_DISCONN_COMPLETE;
+-		mask |= BT_EVT_MASK_REMOTE_VERSION_INFO;
++	buf = bt_hci_cmd_alloc(K_FOREVER);
++	if (!buf) {
++		return -ENOBUFS;
+ 	}
+
+-	if (IS_ENABLED(CONFIG_BT_SMP) &&
+-	    BT_FEAT_LE_ENCR(bt_dev.le.features)) {
+-		mask |= BT_EVT_MASK_ENCRYPT_CHANGE;
+-		mask |= BT_EVT_MASK_ENCRYPT_KEY_REFRESH_COMPLETE;
+-	}
++	ev = net_buf_add(buf, sizeof(*ev));
+
+-	sys_put_le64(mask, ev->events);
+-	return bt_hci_cmd_send_sync(BT_HCI_OP_SET_EVENT_MASK, buf, NULL);
++	/* Mask matching BSA init: 00 c0 bf 00 00 00 00 00 (LE),
++	 * as uint64: 0x0000000000bfc000
++	 */
++	sys_put_le64(0x0000000000bfc000ULL, ev->events_page_2);
++	return bt_hci_cmd_send_sync(BT_HCI_OP_SET_EVENT_MASK_PAGE_2, buf, NULL);
+ }
+
+ const char *bt_hci_get_ver_str(uint8_t core_version)
+@@ -4345,6 +4329,11 @@ static int hci_init(void)
+ 		return err;
+ 	}
+
++	err = set_event_mask_page_2();
++	if (err) {
++		return err;
++	}
++
+ #if defined(CONFIG_BT_HCI_VS)
+ 	hci_vs_init();
+
+--
+2.34.1
+

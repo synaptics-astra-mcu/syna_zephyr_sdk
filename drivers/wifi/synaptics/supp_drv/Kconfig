@@ -1,0 +1,8 @@
+
+config WIFI_BUILD_DEVEL
+	bool "use MHD submodule for build"
+	depends on WIFI_SYNA
+	default n
+	help
+	  Compatibility alias for existing Synaptics Wi-Fi applications.
+	  New configurations should enable WIFI_SYNAPTICS directly.

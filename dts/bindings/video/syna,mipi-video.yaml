@@ -1,0 +1,57 @@
+# Copyright (c) 2026 Synaptics Incorporated
+# SPDX-License-Identifier: Apache-2.0
+
+description: Synaptics MIPI Video Driver
+
+compatible: "syna,mipi-video"
+
+include: [base.yaml]
+
+child-binding:
+  child-binding:
+    description: Video interface port/endpoint nodes
+    include: [video-interfaces.yaml]
+
+properties:
+  clocks:
+    required: true
+    description: Clock controller phandle used for ImgProc clock gating.
+
+  num-lanes:
+    type: int
+    description: Number of CSI-2 data lanes used by this MIPI input.
+
+  interface-width:
+    type: int
+    default: 0
+    description: Internal IPI interface width, 0 for 48-bit and 1 for 16-bit.
+
+  memory-region:
+    type: phandle
+    required: false
+    description: |
+      Optional reserved memory region used as the DMA destination pool for
+      CSI/MIPI captures. Preferred over raw shm_pool_addr/size.
+
+  shm_pool_addr:
+    type: int
+    required: false
+    deprecated: true
+    description: |
+      Start address of the shared memory pool for frames.
+      Deprecated; use memory-region instead.
+
+  shm_pool_size:
+    type: int
+    required: false
+    deprecated: true
+    description: |
+      Size of the shared memory pool.
+      Deprecated; use memory-region instead.
+
+  datapath:
+    type: int
+    required: false
+    description: Hardware datapath selection.
+    enum:
+      - 1   # CSIHOST0RX_TO_MEM

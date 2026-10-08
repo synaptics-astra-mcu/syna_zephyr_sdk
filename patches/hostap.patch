@@ -1,0 +1,146 @@
+diff --git a/src/drivers/driver_zephyr.c b/src/drivers/driver_zephyr.c
+index f83aa2f80..8092b8d21 100644
+--- a/src/drivers/driver_zephyr.c
++++ b/src/drivers/driver_zephyr.c
+@@ -143,6 +143,38 @@ void wpa_supplicant_event_wrapper(void *ctx,
+ 				os_memcpy(frame, data->rx_mgmt.frame, data->rx_mgmt.frame_len);
+ 				data_tmp->rx_mgmt.frame = frame;
+ 			}
++		} else if (event == EVENT_EXTERNAL_AUTH) {
++			union wpa_event_data *data_tmp = msg.data;
++			u8 *extra;
++			size_t len = data->external_auth.ssid_len;
++
++			if (len > SSID_MAX_LEN ||
++			    (len && !data->external_auth.ssid) ||
++			    !data->external_auth.bssid) {
++				os_free(msg.data);
++				return;
++			}
++			/* Store all pointed-to fields after the union so one free suffices. */
++			data_tmp = os_realloc(msg.data, sizeof(*data) + len + ETH_ALEN +
++					      (data->external_auth.mld_addr ? ETH_ALEN : 0));
++			if (!data_tmp) {
++				os_free(msg.data);
++				return;
++			}
++			msg.data = data_tmp;
++			extra = (u8 *)(data_tmp + 1);
++			if (len) {
++				os_memcpy(extra, data->external_auth.ssid, len);
++				data_tmp->external_auth.ssid = extra;
++				extra += len;
++			}
++			os_memcpy(extra, data->external_auth.bssid, ETH_ALEN);
++			data_tmp->external_auth.bssid = extra;
++			extra += ETH_ALEN;
++			if (data->external_auth.mld_addr) {
++				os_memcpy(extra, data->external_auth.mld_addr, ETH_ALEN);
++				data_tmp->external_auth.mld_addr = extra;
++			}
+ 		} else if (event == EVENT_TX_STATUS) {
+ 			union wpa_event_data *data_tmp = msg.data;
+ 			const struct ieee80211_hdr *hdr;
+@@ -540,6 +572,12 @@ void wpa_drv_zep_event_proc_auth_resp(struct zep_drv_if_ctx *if_ctx,
+ 			     event);
+ }
+ 
++static void wpa_drv_zep_event_external_auth(struct zep_drv_if_ctx *if_ctx,
++					    union wpa_event_data *event)
++{
++	wpa_supplicant_event_wrapper(if_ctx->supp_if_ctx, EVENT_EXTERNAL_AUTH, event);
++}
++
+ 
+ void wpa_drv_zep_event_proc_assoc_resp(struct zep_drv_if_ctx *if_ctx,
+ 				       union wpa_event_data *event,
+@@ -1351,6 +1389,7 @@ static void *wpa_drv_zep_init(void *ctx,
+ 	callbk_fns.scan_res = wpa_drv_zep_event_proc_scan_res;
+ 	callbk_fns.sched_scan_stopped = wpa_drv_zep_event_proc_sched_scan_stopped;
+ 	callbk_fns.auth_resp = wpa_drv_zep_event_proc_auth_resp;
++	callbk_fns.external_auth = wpa_drv_zep_event_external_auth;
+ 	callbk_fns.assoc_resp = wpa_drv_zep_event_proc_assoc_resp;
+ 	callbk_fns.deauth = wpa_drv_zep_event_proc_deauth;
+ 	callbk_fns.disassoc = wpa_drv_zep_event_proc_disassoc;
+@@ -1900,6 +1939,12 @@ static int wpa_drv_zep_associate(void *priv,
+ 	}
+ 
+ 	if_ctx = priv;
++	if (!params->ssid || params->ssid_len > sizeof(if_ctx->ssid)) {
++		wpa_printf(MSG_ERROR, "%s: Invalid SSID", __func__);
++		goto out;
++	}
++	os_memcpy(if_ctx->ssid, params->ssid, params->ssid_len);
++	if_ctx->ssid_len = params->ssid_len;
+ 
+ 	dev_ops = get_dev_ops(if_ctx->dev_ctx);
+ 	if (!dev_ops) {
+@@ -2787,6 +2832,8 @@ out:
+ 	return ret;
+ }
+ 
++#endif /* CONFIG_AP */
++
+ int wpa_drv_zep_send_mlme(void *priv, const u8 *data, size_t data_len, int noack,
+ 	unsigned int freq, const u16 *csa_offs, size_t csa_offs_len, int no_encrypt,
+ 	unsigned int wait, int link_id)
+@@ -2824,6 +2871,19 @@ out:
+ 	return ret;
+ }
+ 
++static int wpa_drv_zep_send_external_auth_status(void *priv,
++						 struct external_auth *params)
++{
++	struct zep_drv_if_ctx *if_ctx = priv;
++	const struct zep_wpa_supp_dev_ops *dev_ops = get_dev_ops(if_ctx->dev_ctx);
++
++	if (!dev_ops || !dev_ops->send_external_auth_status)
++		return -1;
++	return dev_ops->send_external_auth_status(if_ctx->dev_priv, params);
++}
++
++#ifdef CONFIG_AP
++
+ int wpa_drv_hapd_send_eapol(void *priv, const u8 *addr, const u8 *data, size_t data_len,
+                             int encrypt, const u8 *own_addr, u32 flags, int link_id)
+ {
+@@ -3121,6 +3181,9 @@ const struct wpa_driver_ops wpa_driver_zep_ops = {
+ 	.get_conn_info = wpa_drv_zep_get_conn_info,
+ 	.set_country = wpa_drv_zep_set_country,
+ 	.get_country = wpa_drv_zep_get_country,
++	/* STA external SAE authentication needs these even without AP support. */
++	.send_mlme = wpa_drv_zep_send_mlme,
++	.send_external_auth_status = wpa_drv_zep_send_external_auth_status,
+ #ifdef CONFIG_AP
+ #ifdef CONFIG_WIFI_NM_HOSTAPD_AP
+ 	.hapd_init = wpa_drv_zep_hapd_init,
+@@ -3128,7 +3191,6 @@ const struct wpa_driver_ops wpa_driver_zep_ops = {
+ 	.do_acs = wpa_drv_zep_do_acs,
+ #endif
+ 	.hapd_send_eapol = wpa_drv_hapd_send_eapol,
+-	.send_mlme = wpa_drv_zep_send_mlme,
+ 	.set_ap = wpa_drv_zep_set_ap,
+ 	.stop_ap = wpa_drv_zep_stop_ap,
+ 	.deinit_ap = wpa_drv_zep_deinit_ap,
+diff --git a/src/drivers/driver_zephyr.h b/src/drivers/driver_zephyr.h
+index b86031d74..d9121ffba 100644
+--- a/src/drivers/driver_zephyr.h
++++ b/src/drivers/driver_zephyr.h
+@@ -185,6 +185,8 @@ struct zep_wpa_supp_dev_callbk_fns {
+ 
+ 	void (*auth_resp)(struct zep_drv_if_ctx *if_ctx,
+ 			  union wpa_event_data *event);
++	void (*external_auth)(struct zep_drv_if_ctx *if_ctx,
++			      union wpa_event_data *event);
+ 
+ 	void (*assoc_resp)(struct zep_drv_if_ctx *if_ctx,
+ 			   union wpa_event_data *event, unsigned int status);
+@@ -293,6 +295,8 @@ struct zep_wpa_supp_dev_ops {
+ 			    struct wpa_bss *curr_bss);
+ 	int (*associate)(void *if_priv,
+ 			 struct wpa_driver_associate_params *params);
++	int (*send_external_auth_status)(void *if_priv,
++					 struct external_auth *params);
+ 	int (*set_key)(void *if_priv,
+ 		       const unsigned char *ifname,
+ 		       enum wpa_alg alg,

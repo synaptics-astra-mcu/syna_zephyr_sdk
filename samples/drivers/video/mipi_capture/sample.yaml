@@ -1,0 +1,11 @@
+sample:
+  name: mipi_capture
+
+tests:
+  sample.video.mipi_capture:
+    tags:
+      - video
+      - camera
+      - mipi
+    integration_platforms:
+      - sr100_rdk/sr100/m55

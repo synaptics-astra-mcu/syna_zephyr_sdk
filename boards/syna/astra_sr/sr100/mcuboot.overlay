@@ -1,0 +1,36 @@
+/ {
+	chosen {
+		zephyr,flash = &sram1;
+		zephyr,sram = &sram2;
+		zephyr,code-partition = &boot_partition;
+		mcuboot,ram-load-dev = &sram0;
+	};
+
+	sram1: memory@33e80000 {
+		compatible = "mmio-sram";
+		reg = <0x33e80000 DT_SIZE_K(64)>;
+		#address-cells = <1>;
+		#size-cells = <1>;
+		ranges = <0x0 0x33e80000 DT_SIZE_K(64)>;
+	};
+
+	sram2: memory@33e90000 {
+		compatible = "mmio-sram";
+		reg = <0x33e90000 DT_SIZE_K(32)>;
+		#address-cells = <1>;
+		#size-cells = <1>;
+		ranges = <0x0 0x33e90000 DT_SIZE_K(32)>;
+	};
+};
+
+&i2c1 {
+	status = "disabled";
+};
+
+&gpio_exp0 {
+	status = "disabled";
+};
+
+&usb0 {
+	status = "disabled";
+};

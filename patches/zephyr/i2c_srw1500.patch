@@ -1,0 +1,130 @@
+diff --git a/drivers/i2c/i2c_dw.c b/drivers/i2c/i2c_dw.c
+index 780956d6050..4ba451d6e8e 100644
+--- a/drivers/i2c/i2c_dw.c
++++ b/drivers/i2c/i2c_dw.c
+@@ -684,6 +684,10 @@ static int i2c_dw_setup(const struct device *dev, uint16_t slave_address)
+ 		LOG_DBG("I2C: using 10-bit address");
+ 		ic_con.bits.addr_master_10bit = 1U;
+ 		ic_con.bits.addr_slave_10bit = 1U;
++	} else {
++		LOG_DBG("I2C: using 7-bit address");
++		ic_con.bits.addr_master_10bit = 0U;
++		ic_con.bits.addr_slave_10bit = 0U;
+ 	}
+ 
+ 	/* Setup the clock frequency and speed mode */
+@@ -1128,7 +1132,7 @@ static int i2c_dw_set_master_mode(const struct device *dev)
+ 	return 0;
+ }
+ 
+-static int i2c_dw_set_slave_mode(const struct device *dev, uint8_t addr)
++static int i2c_dw_set_slave_mode(const struct device *dev, struct i2c_target_config *cfg)
+ {
+ 	uint32_t reg_base = get_regs(dev);
+ 	union ic_con_register ic_con;
+@@ -1139,12 +1143,17 @@ static int i2c_dw_set_slave_mode(const struct device *dev, uint8_t addr)
+ 
+ 	ic_con.bits.master_mode = 0U;
+ 	ic_con.bits.slave_disable = 0U;
++	if (cfg->flags & I2C_TARGET_FLAGS_ADDR_10_BITS) {
++		ic_con.bits.addr_slave_10bit = 1;
++	} else {
++		ic_con.bits.addr_slave_10bit = 0;
++	}
+ 	ic_con.bits.rx_fifo_full = 1U;
+ 	ic_con.bits.restart_en = 1U;
+ 	ic_con.bits.stop_det = 1U;
+ 
+ 	write_con(ic_con.raw, reg_base);
+-	write_sar(addr, reg_base);
++	write_sar(cfg->address, reg_base);
+ 	write_intr_mask(~DW_INTR_MASK_RESET, reg_base);
+ 
+ 	set_bit_enable_en(reg_base);
+@@ -1165,7 +1174,7 @@ static int i2c_dw_slave_register(const struct device *dev, struct i2c_target_con
+ 
+ 	dw->read_in_progress = false;
+ 	dw->slave_cfg = cfg;
+-	ret = i2c_dw_set_slave_mode(dev, cfg->address);
++	ret = i2c_dw_set_slave_mode(dev, cfg);
+ 	write_intr_mask(DW_INTR_MASK_RX_FULL | DW_INTR_MASK_RD_REQ | DW_INTR_MASK_TX_ABRT |
+ 				DW_INTR_MASK_STOP_DET,
+ 			reg_base);
+@@ -1260,6 +1269,22 @@ static int i2c_dw_initialize(const struct device *dev)
+ 	uint32_t scl_timeout = rom->scl_timeout_value * CONFIG_I2C_DW_CLOCK_SPEED * 1000;
+ #endif
+ 
++#if defined(CONFIG_CLOCK_CONTROL)
++	if (rom->clock_dev != NULL) {
++		if (!device_is_ready(rom->clock_dev)) {
++			LOG_ERR("I2C clock device is not ready");
++			return -ENODEV;
++		}
++
++		ret = clock_control_on(rom->clock_dev,
++				       rom->clock_subsys);
++		if (ret != 0) {
++			LOG_ERR("Failed to enable I2C clock: %d", ret);
++			return ret;
++		}
++	}
++#endif
++
+ #if defined(CONFIG_RESET)
+ 	if (rom->reset.dev) {
+ 		ret = reset_line_toggle_dt(&rom->reset);
+@@ -1397,6 +1422,16 @@ static int i2c_dw_initialize(const struct device *dev)
+ #define RESET_DW_CONFIG(n)
+ #endif
+ 
++#if defined(CONFIG_CLOCK_CONTROL)
++#define CLOCK_DW_CONFIG(n)                                                                         \
++	IF_ENABLED(DT_INST_NODE_HAS_PROP(n, clocks),                          \
++		   (.clock_dev = DEVICE_DT_GET(DT_INST_CLOCKS_CTLR(n)),       \
++		    .clock_subsys =                                           \
++			    (clock_control_subsys_t)DT_INST_CLOCKS_CELL(n, clkid),))
++#else
++#define CLOCK_DW_CONFIG(n)
++#endif
++
+ #define I2C_DW_INIT_PCIE0(n)
+ #define I2C_DW_INIT_PCIE1(n) DEVICE_PCIE_INST_INIT(n, pcie),
+ #define I2C_DW_INIT_PCIE(n)  _CONCAT(I2C_DW_INIT_PCIE, DT_INST_ON_BUS(n, pcie))(n)
+@@ -1473,8 +1508,8 @@ static int i2c_dw_initialize(const struct device *dev)
+ 		.hcnt_offset = (int16_t)DT_INST_PROP_OR(n, hcnt_offset, 0),                        \
+ 		.fs_spk_len = MAX((uint8_t)DT_INST_PROP_OR(n, fs_spike_len, 0), DW_IC_SPKLEN_MIN), \
+ 		.hs_spk_len = MAX((uint8_t)DT_INST_PROP_OR(n, hs_spike_len, 0), DW_IC_SPKLEN_MIN), \
+-		TIMEOUT_DW_CONFIG(n) RESET_DW_CONFIG(n) PINCTRL_DW_CONFIG(n) I2C_DW_INIT_PCIE(n)   \
+-			I2C_CONFIG_DMA_INIT(n)};                                                   \
++		TIMEOUT_DW_CONFIG(n) RESET_DW_CONFIG(n) CLOCK_DW_CONFIG(n) PINCTRL_DW_CONFIG(n)    \
++			I2C_DW_INIT_PCIE(n) I2C_CONFIG_DMA_INIT(n)};                               \
+ 	BUILD_ASSERT(DT_INST_PROP_OR(n, sda_hold_tx, 0) <= 0xffff, "Invalid SDA_HOLD_TX value");   \
+ 	BUILD_ASSERT(DT_INST_PROP_OR(n, sda_hold_rx, 0) <= 0xff, "Invalid SDA_HOLD_RX value");     \
+ 	static struct i2c_dw_dev_config i2c_##n##_runtime;                                         \
+diff --git a/drivers/i2c/i2c_dw.h b/drivers/i2c/i2c_dw.h
+index 577df2f1ace..db48efc7310 100644
+--- a/drivers/i2c/i2c_dw.h
++++ b/drivers/i2c/i2c_dw.h
+@@ -22,6 +22,10 @@ BUILD_ASSERT(IS_ENABLED(CONFIG_PCIE), "DW I2C in DT needs CONFIG_PCIE");
+ #include <zephyr/drivers/reset.h>
+ #endif
+ 
++#if defined(CONFIG_CLOCK_CONTROL)
++#include <zephyr/drivers/clock_control.h>
++#endif
++
+ #ifdef __cplusplus
+ extern "C" {
+ #endif
+@@ -115,6 +119,11 @@ struct i2c_dw_rom_config {
+ 	const struct reset_dt_spec reset;
+ #endif
+ 
++#if defined(CONFIG_CLOCK_CONTROL)
++	const struct device *clock_dev;
++	clock_control_subsys_t clock_subsys;
++#endif
++
+ #if DT_ANY_INST_ON_BUS_STATUS_OKAY(pcie)
+ 	struct pcie_dev *pcie;
+ #endif /* I2C_DW_PCIE_ENABLED */

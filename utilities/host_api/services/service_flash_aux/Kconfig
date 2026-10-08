@@ -1,0 +1,10 @@
+# SPDX-License-Identifier: Apache-2.0
+
+config SERVICE_FLASH_AUX_ENABLED
+	bool "Host API flash auxiliary service"
+	depends on SERVICE_HOST_API_ENABLED
+	depends on MODULE_FLASH_AUX_ENABLED
+	default n
+	help
+	  Enable the flash auxiliary Host API service (service ID 3)
+	  used by host flash tools.

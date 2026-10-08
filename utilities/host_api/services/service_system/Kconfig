@@ -1,0 +1,17 @@
+# SPDX-License-Identifier: Apache-2.0
+
+config SERVICE_SYSTEM_ENABLED
+	bool "Host API system service"
+	depends on SERVICE_HOST_API_ENABLED
+	default y
+	help
+	  Enable the system Host API service.
+
+config HOST_API_SYSTEM_I2C_BUS
+	int "Host API system-service I2C bus"
+	depends on SERVICE_SYSTEM_ENABLED && I2C
+	range 0 1
+	default 1
+	help
+	  Select the SR100 I2C controller used by the system-service
+	  I2C read and write register opcodes.

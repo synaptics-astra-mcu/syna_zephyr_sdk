@@ -1,0 +1,19 @@
+/*
+ * sr100_rdk.overlay — Add storage_partition on external XSPI NOR flash.
+ *
+ * Carves 8 MB starting at offset 0x800000 for LittleFS.
+ * The flash device (flash1) is 16 MB total (128 Mbit).
+ */
+
+&xspi {
+	partitions {
+		compatible = "fixed-partitions";
+		#address-cells = <1>;
+		#size-cells = <1>;
+
+		storage_partition: partition@800000 {
+			label = "storage";
+			reg = <0x800000 0x800000>;
+		};
+	};
+};

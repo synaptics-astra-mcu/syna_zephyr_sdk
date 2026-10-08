@@ -1,0 +1,21 @@
+sample:
+  name: mipi_capture_to_enc
+
+tests:
+  sample.video.mipi_capture_to_enc:
+    tags:
+      - video
+      - camera
+      - jpeg
+      - mipi
+    integration_platforms:
+      - sr100_rdk/sr100/m55
+
+  sample.video.mipi_capture_to_enc.cdc:
+    tags:
+      - video
+      - usb
+    integration_platforms:
+      - sr100_rdk/sr100/m55
+    extra_conf_files:
+      - prj_cdc.conf

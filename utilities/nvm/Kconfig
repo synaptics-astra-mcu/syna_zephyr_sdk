@@ -1,0 +1,9 @@
+# SPDX-License-Identifier: Apache-2.0
+
+config MODULE_NVM_ENABLED
+	bool "FW update NVM metadata"
+	depends on FLASH
+	select CRC
+	default y if MODULE_FW_UPDATE_ENABLED
+	help
+	  Enable the NVM metadata layer used by the firmware update core.

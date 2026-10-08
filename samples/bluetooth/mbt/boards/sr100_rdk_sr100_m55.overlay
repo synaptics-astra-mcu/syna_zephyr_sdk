@@ -1,0 +1,18 @@
+/* Enable UART0 for BT transport with hardware RTS/CTS flow control */
+&ns16550_uart0 {
+	status = "okay";
+	current-speed = <115200>;
+	pinctrl-0 = <&uart0_tx_c &uart0_rx_c &uart0_cts &uart0_rts>;
+	pinctrl-names = "default";
+};
+
+/*
+ * Extend SRAM to cover the full VM0 region (0x33ea0000 to 0x33F00000 = 384KB).
+ * The hardware exposes VM0 (432KB), VM1 (1MB), LP_MEMA (1MB), LP_MEMB (448KB).
+ * The Zephyr default of 128KB is insufficient for the BT FW patch (134KB) +
+ * application code. 384KB safely covers the full VM0 region.
+ */
+&sram0 {
+	reg = <0x33ea0000 DT_SIZE_K(384)>;
+	ranges = <0x0 0x33ea0000 DT_SIZE_K(384)>;
+};

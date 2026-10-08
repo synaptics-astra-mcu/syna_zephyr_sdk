@@ -1,0 +1,15 @@
+/*
+ * Copyright (c) 2026 Synaptics Incorporated
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
+&xspi {
+    io-mode = "quad";
+    quad-read-dummy = <6>;
+    quad-enable-command = <0>;
+    quad-enable-bit = <6>;
+    quad-read-sr1-command = <5>;
+    quad-read-sr2-command = <0>;
+    quad-write-sr-command = <1>;
+};

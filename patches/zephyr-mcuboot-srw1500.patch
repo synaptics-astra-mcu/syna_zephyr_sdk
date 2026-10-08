@@ -1,0 +1,226 @@
+diff --git a/boot/bootutil/include/bootutil/crypto/ecdsa.h b/boot/bootutil/include/bootutil/crypto/ecdsa.h
+index 35f0930f..78083b48 100644
+--- a/boot/bootutil/include/bootutil/crypto/ecdsa.h
++++ b/boot/bootutil/include/bootutil/crypto/ecdsa.h
+@@ -32,13 +32,32 @@
+     #error "P384 requires PSA_CRYPTO to be defined"
+ #endif
+ 
+-#if (defined(MCUBOOT_USE_TINYCRYPT) + \
+-     defined(MCUBOOT_USE_CC310) + \
+-     defined(MCUBOOT_USE_PSA_OR_MBED_TLS)) != 1
+-    #error "One crypto backend must be defined: either CC310/TINYCRYPT/MBED_TLS/PSA_CRYPTO"
++#if defined(MCUBOOT_USE_SYNAPROT_MAILBOX)
++#if defined(MCUBOOT_USE_CC310) || defined(MCUBOOT_USE_PSA_OR_MBED_TLS)
++    #error "SYNA_MAILBOX ECDSA may only coexist with TINYCRYPT for hashing"
++#endif
++#elif (defined(MCUBOOT_USE_TINYCRYPT) + \
++       defined(MCUBOOT_USE_CC310) + \
++       defined(MCUBOOT_USE_PSA_OR_MBED_TLS)) != 1
++    #error "One ECDSA backend must be defined: CC310/TINYCRYPT/MBED_TLS/PSA_CRYPTO"
+ #endif
+ 
+-#if defined(MCUBOOT_USE_TINYCRYPT)
++#if defined(MCUBOOT_USE_SYNAPROT_MAILBOX)
++
++typedef struct {
++    uint8_t reserved;
++} bootutil_ecdsa_context;
++
++void bootutil_ecdsa_init(bootutil_ecdsa_context *ctx);
++void bootutil_ecdsa_drop(bootutil_ecdsa_context *ctx);
++int bootutil_ecdsa_parse_public_key(bootutil_ecdsa_context *ctx,
++                        uint8_t **p, uint8_t *end);
++int bootutil_ecdsa_verify(bootutil_ecdsa_context *ctx,
++                     uint8_t *pk, size_t pk_len,
++                     uint8_t *hash, size_t hash_len,
++                     uint8_t *sig, size_t sig_len);
++
++#elif defined(MCUBOOT_USE_TINYCRYPT)
+     #include <tinycrypt/ecc_dsa.h>
+     #include <tinycrypt/constants.h>
+ #endif /* MCUBOOT_USE_TINYCRYPT */
+@@ -76,6 +95,8 @@
+ extern "C" {
+ #endif
+ 
++#if !defined(MCUBOOT_USE_SYNAPROT_MAILBOX)
++
+ #if (defined(MCUBOOT_USE_TINYCRYPT) || defined(MCUBOOT_USE_MBED_TLS) || \
+      defined(MCUBOOT_USE_CC310)) && !defined(MCUBOOT_USE_PSA_CRYPTO)
+ /*
+@@ -615,6 +636,8 @@ static inline int bootutil_ecdsa_parse_public_key(bootutil_ecdsa_context *ctx,
+ 
+ #endif /* MCUBOOT_USE_MBED_TLS */
+ 
++#endif /* !MCUBOOT_USE_SYNAPROT_MAILBOX */
++
+ #ifdef __cplusplus
+ }
+ #endif
+diff --git a/boot/synaptics/CMakeLists.txt b/boot/synaptics/CMakeLists.txt
+new file mode 100755
+index 00000000..1e7f7e15
+--- /dev/null
++++ b/boot/synaptics/CMakeLists.txt
+@@ -0,0 +1,15 @@
++# Copyright (c) 2026 Synaptics Incorporated
++#
++# SPDX-License-Identifier: Apache-2.0
++
++if(CONFIG_BOOT_CUSTOM_SYNAPROT_VALIDATION)
++  target_sources(app PRIVATE
++    ${CMAKE_CURRENT_LIST_DIR}/syna_ecdsa.c
++  )
++
++  target_include_directories(app PRIVATE
++    ${ZEPHYR_ZEPHYR_SRSDK_MODULE_DIR}/utilities/synaprot_services
++  )
++endif()
++
++target_include_directories(app PRIVATE ${CMAKE_CURRENT_LIST_DIR})
+diff --git a/boot/synaptics/Kconfig b/boot/synaptics/Kconfig
+new file mode 100755
+index 00000000..088146a0
+--- /dev/null
++++ b/boot/synaptics/Kconfig
+@@ -0,0 +1,30 @@
++# Copyright (c) 2026 Synaptics Incorporated
++#
++# SPDX-License-Identifier: Apache-2.0
++
++config BOOT_CUSTOM_SYNA_VALIDATION
++	bool "Synaptics secure co-processor validation support"
++	select MBOX
++	help
++	  Provides the mailbox command framing used by the Synaptics ECDSA
++	  backend. This does not enable MCUboot's whole-image access hooks.
++
++if BOOT_CUSTOM_SYNA_VALIDATION
++
++config BOOT_CUSTOM_SYNA_VALIDATION_TIMEOUT_MS
++	int "Timeout waiting for the co-processor's verify response [ms]"
++	default 2000
++
++config BOOT_SYNA_MAILBOX_SENDER_ID
++	hex "Synaprot M52 sender ID"
++	default 0x0
++
++config BOOT_SYNA_MAILBOX_SOC_CATEGORY
++	hex "Synaprot SOC command category"
++	default 0x0
++
++config BOOT_SYNA_MAILBOX_VERIFY_SIGNATURE_ID
++	hex "Synaprot verify-signature command ID"
++	default 0x0
++
++endif # BOOT_CUSTOM_SYNA_VALIDATION
+diff --git a/boot/synaptics/syna_ecdsa.c b/boot/synaptics/syna_ecdsa.c
+new file mode 100755
+index 00000000..7ec8b3ba
+--- /dev/null
++++ b/boot/synaptics/syna_ecdsa.c
+@@ -0,0 +1,45 @@
++/*
++ * Copyright (c) 2026 Synaptics Incorporated
++ *
++ * SPDX-License-Identifier: Apache-2.0
++ */
++
++#include "bootutil/crypto/ecdsa.h"
++#include "synaprot_service_srw1500.h"
++
++#define SYNA_VERIFY_OK      0
++#define SYNA_VERIFY_FAIL   -1
++
++void bootutil_ecdsa_init(bootutil_ecdsa_context *ctx)
++{
++	ctx->reserved = 0;
++}
++
++void bootutil_ecdsa_drop(bootutil_ecdsa_context *ctx)
++{
++	(void)ctx;
++}
++
++int bootutil_ecdsa_parse_public_key(bootutil_ecdsa_context *ctx,
++					    uint8_t **p, uint8_t *end)
++{
++	(void)ctx;
++
++	if (p == NULL || *p == NULL || end == NULL || *p > end) {
++		return -1;
++	}
++
++	/* The secure co-processor consumes the encoded key bytes directly. */
++	return 0;
++}
++
++int bootutil_ecdsa_verify(bootutil_ecdsa_context *ctx,
++                           uint8_t *pubkey, size_t pubkey_len,
++                           uint8_t *hash, size_t hash_len,
++                           uint8_t *sig, size_t sig_len)
++{
++	(void)ctx;
++
++	return syna_image_verify_signature(pubkey, pubkey_len, hash, hash_len,
++					   sig, sig_len) == SYNA_VERIFY_OK ? 0 : -1;
++}
+diff --git a/boot/zephyr/CMakeLists.txt b/boot/zephyr/CMakeLists.txt
+index 13157372..deaa24ae 100644
+--- a/boot/zephyr/CMakeLists.txt
++++ b/boot/zephyr/CMakeLists.txt
+@@ -77,6 +77,12 @@ if(CONFIG_BOOT_SHARE_BACKEND_RETENTION)
+   zephyr_sources(shared_data.c)
+ endif()
+ 
++# Synaptics mailbox-based image validation porting layer (opt-in, isolated
++# under boot/synaptics/; no changes to bootutil's native validation path).
++if(CONFIG_BOOT_CUSTOM_SYNAPROT_VALIDATION)
++  add_subdirectory(${BOOT_DIR}/synaptics ${PROJECT_BINARY_DIR}/synaptics)
++endif()
++
+ # Generic bootutil sources and includes.
+ zephyr_include_directories(${BOOT_DIR}/bootutil/include)
+ zephyr_sources(
+diff --git a/boot/zephyr/Kconfig b/boot/zephyr/Kconfig
+index 5aba6bc1..570c8b04 100644
+--- a/boot/zephyr/Kconfig
++++ b/boot/zephyr/Kconfig
+@@ -49,6 +49,12 @@ config BOOT_USE_CC310
+ 	help
+ 	  Use cc310 for crypto primitives.
+ 
++config BOOT_USE_SYNAPROT_MAILBOX
++	bool
++	select MBOX
++	help
++	  Use the Synaptics secure co-processor mailbox for ECDSA verification.
++
+ config BOOT_USE_NRF_CC310_BL
+ 	bool
+ 
+@@ -1091,6 +1097,8 @@ endmenu
+ 
+ rsource "Kconfig.serial_recovery"
+ 
++rsource "../synaptics/Kconfig"
++
+ config MCUBOOT_INDICATION_LED
+ 	bool "Turns on LED indication when device is in DFU"
+ 	select GPIO
+diff --git a/boot/zephyr/include/mcuboot_config/mcuboot_config.h b/boot/zephyr/include/mcuboot_config/mcuboot_config.h
+index 766565f3..24cd16f8 100644
+--- a/boot/zephyr/include/mcuboot_config/mcuboot_config.h
++++ b/boot/zephyr/include/mcuboot_config/mcuboot_config.h
+@@ -39,6 +39,10 @@
+ #define MCUBOOT_KEY_IMPORT_BYPASS_ASN
+ #endif
+ 
++#ifdef CONFIG_BOOT_USE_SYNAPROT_MAILBOX
++#define MCUBOOT_USE_SYNAPROT_MAILBOX
++#endif
++
+ #ifdef CONFIG_BOOT_USE_MBEDTLS
+ #define MCUBOOT_USE_MBED_TLS
+ #elif defined(CONFIG_BOOT_USE_TINYCRYPT)

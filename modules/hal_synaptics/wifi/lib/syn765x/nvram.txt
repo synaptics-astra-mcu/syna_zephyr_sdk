@@ -1,0 +1,307 @@
+# syn5312 QFN SDIO DEV board,A1 Chip, iTR, iPA/iLNA version.
+# syn95312qdev_p214.txt
+# ********************SUMMARY********************
+# Board Name: syn95312qdev_p214
+# SSID: 0x0a29
+# macmid:0x02df
+# *************************************************
+# $ Copyright Synaptics $
+# <<Synaptics-WL-IPTag/Proprietary:>>
+
+NVRAMRev=$Rev: 874188 $
+sromrev=11
+boardrev=0x1214
+boardtype=0x0a29
+boardflags=0x00400001
+boardflags2=0xc0800000
+boardflags3=0x40002180
+#boardnum=57410
+macaddr=90:cc:24:00:10:01
+jtag_irw=38
+
+# Regulatory specific
+ccode=0
+regrev=0
+
+# Ant related
+aa2g=1
+aa5g=1
+agbg0=0
+aga0=0
+ag6ga0=0
+
+# Feature flags
+subband5gver=0x4
+subband6gver=0x1
+
+# Board specific
+vendid=0x1e01
+devid=0x44e0
+manfid=0x2d0
+antswitch=0
+pdgain5g=0
+pdgain2g=0
+
+# RX gain related
+rxgains2gelnagaina0=0
+rxgains2gtrisoa0=0
+rxgains2gtrelnabypa0=0
+rxgains5gelnagaina0=0
+rxgains5gtrisoa0=0
+rxgains5gtrelnabypa0=0
+rxgains5gmelnagaina0=0
+rxgains5gmtrisoa0=0
+rxgains5gmtrelnabypa0=0
+rxgains5ghelnagaina0=0
+rxgains5ghtrisoa0=0
+rxgains5ghtrelnabypa0=0
+rxgain_tempcoeff5gl=59
+rxgain_tempcoeff5gml=44
+rxgain_tempcoeff5gmu=93
+rxgain_tempcoeff5gh=59
+
+# RSSI related
+rssicorrnorm_c0=7,7
+rssicorrnorm5g_c0=8,8,8,8,7,8,8,6,6,7,5,6
+rssicorrnorm6g_c0=9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9
+
+# SWDIV related
+#swdiv_en=1
+#swdiv_swctrl_en=0
+#swdiv_antmap2g_main=0x3
+#swdiv_antmap5g_main=0x3
+#swdiv_snrthresh=8
+#swdiv_thresh=500
+#swdiv_log2avg=3
+#swdiv_settle=60
+#swdiv_snrdrop_delta=24
+#swdiv_snrdrop_lmt=72
+#swdiv_snrdrop_txfail=1000
+#swdiv_snrdrop_prd=3
+#swdiv_poll_prd=10
+#swdiv_snrlim=160
+#swdiv_weight=0
+#swdiv_gpio=6
+#swdiv_rx_policy=0x33
+#swdiv_tx_policy=0x33
+#swdiv_bt_rssi_thresh=-255
+
+# HWRSSI related
+rssi_cal_rev=1
+rxgaincal_rssical=1
+gain_cal_temp=25
+rssi_cal_freq_grp_2g=0x08,0x01,0x91,0x2a,0x23,0xb3,0xc4
+rssi_delta_2gb0=1,1,1,1
+rssi_delta_2gb1=3,3,3,3
+rssi_delta_2gb2=1,1,1,1
+rssi_delta_2gb3=1,1,1,1
+rssi_delta_2gb4=3,3,3,3
+rssi_delta_5gl=-8,-8,-8,-8
+rssi_delta_5gml=-6,-6,-6,-6
+rssi_delta_5gmu=-10,-10,-10,-10
+rssi_delta_5gh=-7,-7,-7,-7
+rssi_delta_6gb0=-8,-8,-8,-8
+rssi_delta_6gb1=-6,-6,-6,-6
+rssi_delta_6gb2=-8,-8,-8,-8
+rssi_delta_6gb3=-12,-12,-12,-12
+rssi_delta_6gb4=-9,-9,-9,-9
+rssi_delta_6gb5=-8,-8,-8,-8
+
+# TSSI related
+extpagain2g=2
+extpagain5g=2
+tssipos2g=1
+tssipos5g=1
+tworangetssi2g=0
+tworangetssi5g=0
+lowpowerrange2g=0
+lowpowerrange5g=0
+low_adc_rate_en=1
+paparambwver=3
+AvVmid_c0=6,83,6,91,6,90,6,91,6,90
+AvVmid_6g_c0=6,83,6,86,6,89,6,91,6,92,6,88
+idletssi_disable = 1
+idletssi_5gant0 = -400
+
+# PA parameters
+pa2gccka0=-193,5946,-717
+pa2ga0=-204,5893,-726
+pa5ga0=-121,5841,-715,-129,5925,-716,-142,5927,-711,-151,5813,-718
+pa6ga0=-131,5490,-656,-128,5446,-654,-117,5546,-656,-106,5631,-654,-108,5608,-647,-97,5684,-645
+
+# MISC Core related
+bandcap=7
+txchain=1
+rxchain=1
+nocrc=1
+otpimagesize=502
+xtalfreq=48000
+cckdigfilttype=2
+rcal_code_from_nvram=0x31
+
+# rpcal coef for imptxbf
+rpcal5gb0=238
+rpcal5gb1=228
+rpcal5gb2=222
+rpcal5gb3=229
+rpcal2g=15
+
+# Tempsense Related
+tempthresh=255
+tempoffset=40
+rawtempsense=0x1ff
+phycal_tempdelta=15
+temps_period=15
+temps_hysteresis=15
+
+# Max power and offsets
+maxp2ga0=86
+maxp5ga0=76,82,80,72
+cckpwroffset0=0
+powoffs2gtna0=1,0,0,0,0,0,0,0,0,0,0,0,0,0
+pdoffset20mRU_c0=-7,-7,-7,-7,-7,-7,-7,-7,-7,-7,-7,-7,-7,-7,-7,-7
+pdoffset6g20mRU_c0=-7,-7,-7,-7,-7,-7,-7,-7,-7,-7,-7,-7,-7,-7,-7,-7
+
+# HWOLPC
+disable_olpc=0
+olpc_thresh2g=44
+olpc_anchor2g=56
+olpc_thresh5g=40
+olpc_anchor5g=52
+olpc_thresh6g=40
+olpc_anchor6g=52
+hwolpc_offset_c0=0,-3,-3,-3,-2
+hwolpc_offset6g_c0=-4,-3,-3,-4,-4,-4
+
+# 5G power offset per channel for band edge channel
+powoffs5g20mtna0=0,0,0,0,0,0,0
+
+# 2G/5G SU Power Per Rate
+cckbw202gpo=0
+cckbw20ul2gpo=0
+mcsbw202gpo=0x53211102
+dot11agofdmhrbw202gpo=0x6666
+ofdmlrbw202gpo=0x0022
+mcsbw205glpo=0x96420000
+mcsbw205gmpo=0xD8642000
+mcsbw205ghpo=0xF8420000
+mcs8poexp=0
+mcs9poexp=0
+
+# 6G SU Power Per Rate
+maxp6ga0=48,46,46,44,40,36
+mcsbw206gb1po=0xAA660000
+mcsbw206gb2po=0xAA660000
+mcsbw206gb3po=0xAA660000
+mcsbw206gb4po=0xAA660000
+mcsbw206gb5po=0xAA660000
+mcsbw206gb6po=0xAA660000
+
+#OOB params
+#device_wake_opt=1
+host_wake_opt=0
+muxenab=0x10
+
+#PMU
+btldopu=1
+
+#SWCTRL Related
+swctrlmap_2g=0x00000001,0x00000000,0x00000001,0x00000001,0x3FF
+swctrlmapext_2g=0x00000000,0x00000000,0x00000000,0x000000,0x000
+clb2gslice0core0=0x03F
+clb2gslice1core0=0x000
+clb5gslice0core0=0x0
+clb5gslice1core0=0x000
+
+#BT Coex
+btc_mode=1
+btc_prisel_ant_mask=0x0
+clb_swctrl_smask_ant0=0x3F
+clb_swctrl_dmask_bt_ant0=0x0
+bt_coex_chdep_div=1
+
+# --- PAPD Cal related params ----
+# 0:NBPAPD 1:WBPAPD
+txwbpapden=0
+# NB PAPD Cal params
+nb_eps_offset=470,470
+nb_bbmult=66,66
+nb_papdcalidx2g=8,8
+nb_papdcalidx5g_20=13,12,14,15
+nb_papdcalidx6g_20=14,10,14,14,11,12
+nb_txattn=2,2
+nb_rxattn=1,1
+nb_eps_stopidx=63
+epsilonoff_5g20_c0=4,3,4,4
+epsilonoff_2g20_c0=0
+epsilonoff_6g20_c0=2,2,2,3,6,6
+
+#TX-IQLO related
+iqcaloff_2g20=10
+iqcaloff_5g20=1,1,3,3
+iqcaloff_6g20=5,6,6,6,8,10
+
+#PAPR related
+paprdis=1
+paprrmcsgamma2g=500,550,550,-1,-1,-1,-1,-1,-1,-1,-1,-1
+paprrmcsgain2g=128,128,128,0,0,0,0,0,0,0,0,0
+paprrmcsgamma2g_ch13=500,550,550,-1,-1,-1,-1,-1,-1,-1,-1,-1
+paprrmcsgain2g_ch13=128,128,128,0,0,0,0,0,0,0,0,0
+paprrmcsgamma2g_ch1=500,550,550,-1,-1,-1,-1,-1,-1,-1,-1,-1
+paprrmcsgain2g_ch1=128,128,128,0,0,0,0,0,0,0,0,0
+paprrmcsgamma5g20=500,500,500,-1,-1,-1,-1,-1,-1,-1,-1,-1
+paprrmcsgain5g20=128,128,128,0,0,0,0,0,0,0,0,0
+
+# Enable papd for cck when target pwr ge 16dBm
+cckpapd_pwrthresh=64
+
+# energy detect threshold
+ed_thresh2g=-67
+ed_thresh5g=-67
+ed_thresh6g=-70
+
+# energy detect threshold for EU
+eu_edthresh2g=-67
+eu_edthresh5g=-67
+eu_edthresh6g=-67
+
+## ULOFDMA Board limit PPRs for 2G20 ##
+ruppr2g20bpska0=0x0
+ruppr2g20qpska0=0x0
+ruppr2g20qam16a0=0x0
+ruppr2g20qam64a0=0x1
+ruppr2g20qam256a0=0x21084
+
+## ULOFDMA Board limit PPRs for 5G20 ##
+ruppr5g20bpska0=0x20000
+ruppr5g20qpska0=0x18000
+ruppr5g20qam16a0=0x28000
+ruppr5g20qam64a0=0x29086
+ruppr5g20qam256a0=0x62908
+
+## ULOFDMA Board limit PPRs for 6G20 ##
+ruppr6g20bpska0=0x0
+ruppr6g20qpska0=0x0
+ruppr6g20qam16a0=0x21084
+ruppr6g20qam64a0=0x5294A
+ruppr6g20qam256a0=0x6318C
+
+# Base K Values (For the VHT case 5G 80/40/20/2G20)
+proxd_basekival=,,12156,12147
+proxd_basektval=,,12156,12147
+# Offsets across channels (Upper nibble for target, lower nibble for initiator - saved in hex)
+proxd_20mkval=0x0202,0x0303,0x0303,0x0707,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0x0505,0x0a0a,0x1010,0x0606,0x0000
+proxd_2gkval=0x0606,0x0606,0x1616,0x1717,0x1818,0x1717,0x0707,0x0505,0x0505,0x0404,0x0000,0,0,0
+# Offsets across frame formats @ Initiator
+# Only for non-VHT frame (Leg6, Leg non-6, mcs0, non-mcs0)
+# Delta between the base values are adjusted here
+proxdi_rate20m=24312,24312,0,0
+proxdi_rate2g=24294,24294,0,0
+proxdi_ack=0,0,0,0
+# Offsets across frame formats @ Responder
+proxdt_rate20m=24312,24312,0,0
+proxdt_rate2g=24294,24294,0,0
+proxdt_ack=0,0,0,0
+lhl_lp_main_ctl2=0x3feb
+prewds=0
+rc_osc_en=0

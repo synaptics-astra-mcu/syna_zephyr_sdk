@@ -1,0 +1,40 @@
+# Copyright (c) 2026 Synaptics Incorporated
+#
+# SPDX-License-Identifier: Apache-2.0
+
+description: |
+  Synaptics SYNA Bluetooth HCI UART controller node.
+
+  Place this node as a child of the UART bus node used for HCI transport.
+  The parent UART must have a "zephyr,bt-hci-uart" child that wraps this node.
+
+  Example in board overlay:
+
+    &ns16550_uart0 {
+      status = "okay";
+      current-speed = <115200>;
+      pinctrl-0 = <&uart0_tx_c &uart0_rx_c &uart0_cts &uart0_rts>;
+      pinctrl-names = "default";
+
+      bt_hci_uart: bt_hci_uart {
+        compatible = "zephyr,bt-hci-uart";
+        status = "okay";
+
+        bt_hci_syna: bt-hci {
+          compatible = "syna,bt-hci-uart";
+          status = "okay";
+          bt-reg-on-gpios = <&gpio0 25 GPIO_ACTIVE_HIGH>;
+        };
+      };
+    };
+
+compatible: "syna,bt-hci-uart"
+
+include: base.yaml
+
+properties:
+  bt-reg-on-gpios:
+    type: phandle-array
+    description: |
+      GPIO used to power the BT chip on/off (BT_REGON).
+      Assert HIGH to enable the chip before sending HCI commands.

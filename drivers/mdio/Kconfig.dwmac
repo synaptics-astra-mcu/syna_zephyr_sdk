@@ -1,0 +1,20 @@
+# Copyright (c) 2023 Intel Corporation
+# SPDX-License-Identifier: Apache-2.0
+
+config MDIO_DWMAC
+	bool "synopsys mdio driver"
+	depends on ETH_DWMAC
+	default y
+	help
+	  Enable Synopsys dwc mac MDIO driver.
+
+if  MDIO_DWMAC
+
+config MDIO_DWMAC_STATUS_BUSY_CHECK_TIMEOUT
+	int "A timeout value in us to check software reset status"
+	default 10000
+	help
+	  This option specifies the timeout value in microseconds (us) for checking
+	  the software reset status during the MDIO initialization.
+
+endif

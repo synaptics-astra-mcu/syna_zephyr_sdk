@@ -1,0 +1,34 @@
+# Copyright (C) 2026 Synaptics Incorporated. All rights reserved.
+# SPDX-License-Identifier: Apache-2.0
+
+description: |
+  Synaptics Secure Island SPROT_MBOX (H2S/S2H) polled mailbox to the secure
+  co-processor. No interrupt line exists for this block; status must be
+  polled. reg[0] is the mailbox register block (H2S/S2H CSR + data) for
+  the selected role, reg[1] is the MCU_SYSCTRL interface-lock register
+  used to arbitrate access to the mailbox between masters.
+
+compatible: "syna,synaprot-mbox"
+
+include: [base.yaml, mailbox-controller.yaml]
+
+properties:
+  reg:
+    required: true
+
+  reg-names:
+    required: true
+
+  syna,mailbox-role:
+    type: string
+    default: "ree"
+    enum:
+      - "ree"
+      - "tee"
+    description: |
+      Which secure-side inbox this instance talks to. REE and TEE each have
+      their own H2S/S2H register block at a fixed offset from reg[0]; this
+      selects that offset. Defaults to "ree" (srw1500's normal Zephyr role).
+
+mbox-cells:
+  - channel

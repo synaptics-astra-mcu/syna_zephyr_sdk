@@ -1,0 +1,12 @@
+# SPDX-License-Identifier: Apache-2.0
+# Module: USB CDC stack service configuration options
+
+config USB_CDC_LAYER
+	bool "USB CDC stack-owned composite service"
+	depends on USBD_CDC_ACM_CLASS
+	help
+	  Enable the stack-owned dual CDC ACM USB device bring-up. The
+	  application must source samples/subsys/usb/common/Kconfig.sample_usbd
+	  to provide the SAMPLE_USBD_* descriptor options, and must not enable
+	  another owner of zephyr_udc0 such as SERVICE_USB_HOST_API_ENABLED.
+	  

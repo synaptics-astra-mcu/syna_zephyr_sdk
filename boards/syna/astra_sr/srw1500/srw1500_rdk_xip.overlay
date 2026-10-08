@@ -1,0 +1,32 @@
+/*
+ * Copyright (c) 2026 Synaptics Incorporated
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ */
+ 
+/ {
+    chosen {
+        zephyr,flash = &xspi;
+        zephyr,code-partition = &slot0_partition;
+        zephyr,flash-controller = &xspi;
+        /* Uncomment to get console and shell logs over USB. */
+        /* zephyr,console = &cdc_acm_uart0; */
+        /* zephyr,shell-uart = &cdc_acm_uart0; */
+    };
+};
+
+&mpc_xspi {
+    status = "okay";
+};
+
+&ethosu {
+    status = "okay";
+};
+
+&zephyr_udc0 {
+    status = "okay";
+
+    cdc_acm_uart0: cdc_acm_uart0 {
+        compatible = "zephyr,cdc-acm-uart";
+    };
+};

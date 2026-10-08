@@ -1,0 +1,18 @@
+# SPDX-License-Identifier: Apache-2.0
+# Module: USB HID driver build integration
+
+add_compile_definitions(DEBUG_RUNTIME_LOGS=0)
+
+zephyr_library_include_directories(${CMAKE_CURRENT_LIST_DIR})
+zephyr_library_include_directories(${CMAKE_CURRENT_LIST_DIR}/profiles)
+zephyr_library_sources_ifdef(CONFIG_USB_HID_LAYER usb_hid_compat.c)
+zephyr_library_sources_ifdef(CONFIG_USBD_HID_SUPPORT usb_hid_stack_service.c)
+zephyr_library_sources_ifdef(CONFIG_USB_HID_KEYBOARD profiles/keyboard/usb_hid_keyboard.c)
+zephyr_library_sources_ifdef(CONFIG_USB_HID_MOUSE profiles/mouse/usb_hid_mouse.c)
+zephyr_library_sources_ifdef(CONFIG_USBD_HID_SUPPORT profiles/pen/usb_hid_pen.c)
+zephyr_library_sources_ifdef(CONFIG_USBD_HID_SUPPORT profiles/touchpad/usb_hid_touchpad.c)
+zephyr_library_sources_ifdef(CONFIG_USBD_HID_SUPPORT profiles/touchscreen/usb_hid_touchscreen.c)
+zephyr_library_sources_ifdef(CONFIG_USBD_HID_SUPPORT profiles/custom/usb_hid_custom.c)
+zephyr_library_sources_ifdef(CONFIG_USBD_HID_SUPPORT profiles/als/usb_hid_als.c)
+zephyr_library_sources_ifdef(CONFIG_USBD_HID_SUPPORT profiles/hpd/usb_hid_hpd.c)
+zephyr_library_sources_ifdef(CONFIG_USBD_HID_SUPPORT profiles/customhpd/usb_hid_customhpd.c)

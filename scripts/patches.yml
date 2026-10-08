@@ -1,0 +1,18 @@
+patches:
+  - path: patches/zephyr/i2c_srw1500.patch
+  - path: patches/zephyr-uart-dma.patch
+  - path: patches/zephyr-spi-dma.patch
+  - path: patches/cmsis_dsp_helium.patch
+  - path: patches/zephyr-mbox.patch
+  - path: patches/dwmac.patch
+  - path: patches/zephyr-v4_4.patch
+  - path: patches/udc_dwc2_sr100.patch
+  - path: patches/udc_dwc2_srw1500.patch
+  - path: patches/bl-linker.patch
+  - path: patches/zephyr-mcuboot-srw1500.patch
+    module: bootloader/mcuboot
+  - path: patches/hostap.patch
+    module: modules/lib/hostap
+  # ── Bluetooth ──
+  - path: patches/bluetooth_ots_otc_object_change.patch
+  - path: patches/porting_a2dp_src_sink_profile.patch

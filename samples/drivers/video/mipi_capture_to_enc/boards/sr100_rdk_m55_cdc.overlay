@@ -1,0 +1,12 @@
+/*
+ * Enable USB CDC ACM UART node for the mipi_capture_to_enc sample.
+ *
+ * Keep this separate so non-USB builds don't enumerate extra CDC interfaces.
+ */
+
+&zephyr_udc0 {
+	cdc_acm_uart0: cdc_acm_uart0 {
+		compatible = "zephyr,cdc-acm-uart";
+		label = "Syna CDC ACM";
+	};
+};

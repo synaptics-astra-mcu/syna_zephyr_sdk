@@ -1,0 +1,32 @@
+/*
+ * Copyright (c) 2026 Synaptics Incorporated
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
+/ {
+	chosen {
+		zephyr,flash = &xspi;
+		zephyr,flash-controller = &xspi;
+		zephyr,code-partition = &slot0_partition;
+	};
+
+	ramdisk0 {
+		compatible = "zephyr,ram-disk";
+		disk-name = "RAM";
+		sector-size = <512>;
+		sector-count = <128>;
+	};
+};
+
+/* GPIO18 shares SDIO_DATA_2; reserve it as CAP0 only for this smoke test. */
+&pwm0 {
+	pinctrl-0 = <&SDIO_DATA_2__CAP0 &GPADC_IN5__PWM5>;
+	pinctrl-names = "default";
+};
+
+&xspi {
+	compatible = "cdns,xspi", "soc-nv-flash";
+	status = "okay";
+};
+

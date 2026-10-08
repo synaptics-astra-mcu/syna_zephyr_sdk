@@ -1,0 +1,20 @@
+&i2c0_ms_scl {
+    bias-pull-up;
+};
+
+&i2c0_ms_sda {
+    bias-pull-up;
+};
+
+&i2c0 {
+    status = "disabled";
+};
+
+&user_button {
+    status = "disabled";
+};
+
+&ipc0 {
+    /* Must match the peer core build: 512 bytes MTU per direction. */
+    shared-memory-size = <0x400>;
+};

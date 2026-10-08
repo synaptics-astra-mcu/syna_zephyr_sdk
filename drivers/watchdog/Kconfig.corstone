@@ -1,0 +1,15 @@
+# ARM Corstone WDOG cfg
+
+# Copyright (c) 2026 Synaptics Incorporated
+# SPDX-License-Identifier: Apache-2.0
+
+config WDOG_CORSTONE
+	bool "Corstone Watchdog Driver for ARM family of MCUs"
+	default y
+	depends on DT_HAS_ARM_CORSTONE_WATCHDOG_ENABLED
+	select HAS_WDT_MULTISTAGE
+	select WDT_MULTISTAGE
+	select FLIGHT_CONTROL
+	help
+	  Enable Corstone Watchdog (WDOG_CORSTONE) Driver for ARM
+	  family of MCUs.

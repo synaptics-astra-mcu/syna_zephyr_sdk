@@ -1,0 +1,7 @@
+# SPDX-License-Identifier: Apache-2.0
+
+rsource "nvm/Kconfig"
+rsource "fw_update/Kconfig"
+rsource "flash_aux/Kconfig"
+rsource "host_api/Kconfig"
+rsource "synaprot_services/Kconfig"

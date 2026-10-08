@@ -1,0 +1,10 @@
+sample:
+  name: Synaptics DMA Sample
+
+tests:
+  sample.syna.dma:
+    tags:
+      - dma
+      - syna
+    integration_platforms:
+      - sr100_rdk/sr100/m55

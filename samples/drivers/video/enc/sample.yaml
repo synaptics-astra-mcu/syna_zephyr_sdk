@@ -1,0 +1,10 @@
+sample:
+  name: jpeg_encode
+
+tests:
+  sample.video.jpeg_encode:
+    tags:
+      - video
+      - jpeg
+    integration_platforms:
+      - sr100_rdk/sr100/m55

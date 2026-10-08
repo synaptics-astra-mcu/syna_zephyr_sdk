@@ -1,0 +1,17 @@
+# Copyright (c) 2026 Synaptics Incorporated
+# SPDX-License-Identifier: Apache-2.0
+
+description: Synaptics SRW1500 memory-mapped OTP public data window
+
+compatible: "syna,srw1500-otp"
+
+include: base.yaml
+
+properties:
+  reg:
+    required: true
+
+  otp-size:
+    type: int
+    required: true
+    description: Size in bytes of the OTP data window

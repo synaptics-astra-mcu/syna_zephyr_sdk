@@ -1,0 +1,65 @@
+#Copyright (c) 2026 Synaptics Incorporated
+#SPDX-License-Identifier: Apache-2.0
+
+menuconfig WIFI_SYNA
+	bool "Synaptics Wi-Fi driver support"
+	depends on WIFI
+	select NET_L2_ETHERNET
+	select NET_L2_WIFI_MGMT
+	select WIFI_ENABLED
+	select WIFI_USE_NATIVE_NETWORKING
+	help
+	  Enable Synaptics SoC Wi-Fi support.
+
+config WIFI_ENABLED
+	bool
+
+if WIFI_SYNA
+
+config SYNA_WIFI_INIT_PRIORITY
+	int "Wi-Fi driver init priority"
+	default SDHC_INIT_PRIORITY if SYNA_WIFI_BACKEND_NATIVE_API
+	default WIFI_INIT_PRIORITY
+	help
+	  Wi-Fi device driver initialization priority.
+	  Do not mess with it unless you know what you are doing.
+	  Note that the priority needs to be lower than the net stack
+	  so that it can start before the networking sub-system.
+
+choice
+	prompt "Select WiFi SoC"
+	default WIFI_4612
+
+config WIFI_4381
+	bool "WIFI_4381"
+
+config WIFI_43711
+	bool "WIFI_43711"
+
+config WIFI_4612
+	bool "WIFI_4612"
+
+config WIFI_SRW1500
+	bool "WIFI_SRW1500"
+endchoice
+
+config WIFI_765X
+	bool
+	default y if WIFI_SRW1500
+
+config WLAN_SECURE_BOOT
+	bool "Enable secure WLAN boot"
+	default y
+
+config SYNA_WIFI_BACKEND_NATIVE_API
+	bool
+	default y if WIFI_4381 || WIFI_43711 || WIFI_4612
+
+config SYNA_WIFI_BACKEND_SUPPLICANT
+	bool
+	default y if WIFI_SRW1500 || WIFI_765X
+	select WIFI_NM_WPA_SUPPLICANT
+
+endif
+
+rsource "supp_drv/Kconfig"

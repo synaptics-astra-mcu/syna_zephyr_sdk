@@ -1,0 +1,29 @@
+# Copyright (C) 2026 Synaptics Incorporated. All rights reserved.
+# SPDX-License-Identifier: Apache-2.0
+
+if SOC_SRW1500
+
+choice BOOTLOADER
+	default BOOTLOADER_MCUBOOT
+endchoice
+
+choice MCUBOOT_MODE
+	default MCUBOOT_MODE_SINGLE_APP
+endchoice
+
+choice BOOT_SIGNATURE_TYPE
+	prompt "MCUboot signature type"
+	default BOOT_SIGNATURE_TYPE_NONE
+
+config BOOT_SIGNATURE_TYPE_NONE
+	bool "None"
+
+config BOOT_SIGNATURE_TYPE_RSA
+	bool "RSA"
+
+config BOOT_SIGNATURE_TYPE_ECDSA_P256
+	bool "ECDSA P-256"
+
+endchoice
+
+endif # SOC_SRW1500
