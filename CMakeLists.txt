@@ -6,6 +6,7 @@
 
 zephyr_include_directories(include)
 
+add_subdirectory_ifdef(CONFIG_WIFI_SRW1500 modules/hal_synaptics/con_boot)
 add_subdirectory(drivers)
 add_subdirectory(utilities)
 add_subdirectory(modules/hal_synaptics/video/sr100)
