@@ -124,41 +124,7 @@ Building
 The SRW1500 smoke test sample can be built as a RAM image or as an XIP flash
 image.
 
-**RAM image**
-
-.. code-block:: console
-
-   cd ~/syna_zephyr
-   west build --pristine -b srw1500_rdk zephyr_srsdk/samples/srw1500_smoke_test/
-
 **XIP flash image**
-
-.. code-block:: console
-
-   cd ~/syna_zephyr
-   west build --pristine -b srw1500_rdk zephyr_srsdk/samples/srw1500_smoke_test/ -- \
-      -DEXTRA_CONF_FILE="$PWD/zephyr_srsdk/boards/syna/astra_sr/srw1500/srw1500_rdk_xip.conf" \
-      -DEXTRA_DTC_OVERLAY_FILE="$PWD/zephyr_srsdk/boards/syna/astra_sr/srw1500/srw1500_rdk_xip.overlay"
-
-To use the GPADC pins for the FTDI UART, add the UART overlay to either the RAM
-or XIP build command:
-
-.. code-block:: console
-
-   west build --pristine -b srw1500_rdk zephyr_srsdk/samples/srw1500_smoke_test/ -- \
-      -DEXTRA_DTC_OVERLAY_FILE="$PWD/zephyr_srsdk/boards/syna/astra_sr/srw1500/uart0_ftdi_gpadc.overlay"
-
-For an XIP build using the GPADC FTDI UART overlay:
-
-.. code-block:: console
-
-   west build --pristine -b srw1500_rdk zephyr_srsdk/samples/srw1500_smoke_test/ -- \
-      -DEXTRA_CONF_FILE="$PWD/zephyr_srsdk/boards/syna/astra_sr/srw1500/srw1500_rdk_xip.conf" \
-      -DEXTRA_DTC_OVERLAY_FILE=\
-      "$PWD/zephyr_srsdk/boards/syna/astra_sr/srw1500/srw1500_rdk_xip.overlay;"\
-      "$PWD/zephyr_srsdk/boards/syna/astra_sr/srw1500/uart0_ftdi_gpadc.overlay"
-
-The output ELF file is generated at ``~/syna_zephyr/build/zephyr/zephyr.elf``.
 
 Sysbuild and MCUboot
 ====================
@@ -195,7 +161,8 @@ Build Command
       --sysbuild \
       -- \
       -DEXTRA_CONF_FILE="$PWD/zephyr_srsdk/boards/syna/astra_sr/srw1500/srw1500_rdk_xip.conf" \
-      -DEXTRA_DTC_OVERLAY_FILE="$PWD/zephyr_srsdk/boards/syna/astra_sr/srw1500/srw1500_rdk_xip.overlay;$PWD/zephyr_srsdk/boards/syna/astra_sr/srw1500/uart0_ftdi_gpadc.overlay"
+      -DEXTRA_DTC_OVERLAY_FILE="$PWD/zephyr_srsdk/boards/syna/astra_sr/srw1500/srw1500_rdk_xip.overlay;\
+      $PWD/zephyr_srsdk/boards/syna/astra_sr/srw1500/uart0_ftdi_gpadc.overlay"
 
 The ``--sysbuild`` option builds MCUboot together with the application.
 
@@ -206,6 +173,9 @@ UART0 FTDI/GPADC configuration.
 .. note::
 
    Currently, the MCUboot + Application build is supported only for flash-based builds.
+
+   UART0 FTDI/GPADC configuration is provided by the ``uart0_ftdi_gpadc.overlay`` 
+   file needs to be included in the build for SRW1500 Dev Board P214 onwards.
 
 USB console and shell
 =====================
@@ -230,6 +200,7 @@ Then set the following options in
 
 Only one log backend should be enabled to prevent duplicate output.
 
+
 Image Outputs
 =============
 
@@ -237,14 +208,7 @@ The generated flash/XIP image boots from flash address ``0x38000000``:
 
 .. code-block:: console
 
-   build/zephyr/srw1500_zephyr_full_flash.bin
-
-The generated RAM image is a fully loadable image containing the SPK,
-bootloader, and Zephyr M52 application:
-
-.. code-block:: console
-
-   build/zephyr/srw1500_zephyr_full_ram.bin
+   build/srw_1500_smoke_test/zephyr/srw1500_zephyr_full_flash.bin
 
 OTP Provisioning
 ================
