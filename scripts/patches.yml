@@ -6,8 +6,7 @@ patches:
   - path: patches/zephyr-mbox.patch
   - path: patches/dwmac.patch
   - path: patches/zephyr-v4_4.patch
-  - path: patches/udc_dwc2_sr100.patch
-  - path: patches/udc_dwc2_srw1500.patch
+  - path: patches/udc_dwc2_syna.patch
   - path: patches/bl-linker.patch
   - path: patches/zephyr-mcuboot-srw1500.patch
     module: bootloader/mcuboot
