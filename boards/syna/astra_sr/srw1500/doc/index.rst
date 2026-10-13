@@ -78,13 +78,15 @@ Initialize the workspace using HTTPS authentication:
 
 .. code-block:: console
 
-   west init -m https://github.com/syna-eepd/zephyr_srsdk.git --mr main ~/syna_zephyr
+   west init -m https://github.com/synaptics-astra-mcu/syna_zephyr_sdk.git --mr main  ~/syna_zephyr
 
 Alternatively, initialize the workspace using SSH authentication:
 
 .. code-block:: console
 
-   west init -m git@github.com:syna-eepd/zephyr_srsdk.git --mr main ~/syna_zephyr
+   west init -m git@github.com:synaptics-astra-mcu/syna_zephyr_sdk.git --mr main ~/syna_zephyr
+
+The --mr option selects the manifest revision. Replace main with the required branch name when building another SDK revision.
 
 Install Zephyr dependencies and clone the upstream projects:
 
@@ -94,13 +96,6 @@ Install Zephyr dependencies and clone the upstream projects:
    west update --group-filter +optional
    python -m pip install -r ~/syna_zephyr/zephyr/scripts/requirements.txt
    west sdk install --version 1.0.0
-
-For image generation, clone the Synaptics SRSDK tools repository:
-
-.. code-block:: console
-
-   cd ~/syna_zephyr
-   git clone https://github.com/synaptics-astra-mcu/srsdk_tools.git
 
 Tools specific to srw1500 are located in ``~/syna_zephyr/srsdk_tools/srw1500_tools``.
 

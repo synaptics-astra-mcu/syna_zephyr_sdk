@@ -128,6 +128,8 @@ command:
 
    west init -m https://github.com/synaptics-astra-mcu/syna_zephyr_sdk.git --mr main  ~/syna_zephyr
 
+The --mr option selects the manifest revision. Replace main with the required branch name when building another SDK revision.
+
 Option 2: .zip file
 
 Copy the ``syna_zephyr_sdk-main.zip`` file into ``~/syna_zephyr`` and run:
