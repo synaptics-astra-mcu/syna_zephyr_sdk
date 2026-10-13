@@ -157,14 +157,8 @@ included (per default optional projects are skipped).
    pip install -r ~/syna_zephyr/zephyr/scripts/requirements.txt
    west sdk install --version 1.0.0
 
-For the image generation scripts, clone the following repository:
 
-.. code-block:: console
-
-   cd ~/syna_zephyr
-   git clone https://github.com/synaptics-astra-mcu/srsdk_tools.git
-
-These tools require the python package ``pycryptodome`` and the executable
+The image generation tools require the python package ``pycryptodome`` and the executable
 ``arm-none-eabi-objcopy`` from the ARM GNU toolchain in your PATH.
 
 **Apply patches**
