@@ -26,11 +26,8 @@ Building and Running
 .. code-block:: console
 
    west build --pristine -b srw1500_rdk zephyr/samples/net/wifi/shell --sysbuild -- \
-  -DEXTRA_CONF_FILE="$PWD/zephyr_srsdk/samples/net/wifi/shell/boards/srw1500_rdk.conf;\
-$PWD/zephyr_srsdk/samples/net/wifi/shell/synaptics/overlay_srw1500.conf;\
-$PWD/zephyr_srsdk/samples/net/wifi/shell/synaptics/overlay_srw1500_release.conf" \
-  -DEXTRA_DTC_OVERLAY_FILE="$PWD/zephyr_srsdk/boards/syna/astra_sr/srw1500/srw1500_rdk_xip.overlay;\
-$PWD/zephyr_srsdk/boards/syna/astra_sr/srw1500/uart0_ftdi_gpadc.overlay"
+  -DEXTRA_CONF_FILE="$PWD/zephyr_srsdk/samples/net/wifi/shell/boards/srw1500_rdk.conf;$PWD/zephyr_srsdk/samples/net/wifi/shell/synaptics/overlay_srw1500.conf;$PWD/zephyr_srsdk/samples/net/wifi/shell/synaptics/overlay_srw1500_release.conf" \
+  -DEXTRA_DTC_OVERLAY_FILE="$PWD/zephyr_srsdk/boards/syna/astra_sr/srw1500/srw1500_rdk_xip.overlay;$PWD/zephyr_srsdk/boards/syna/astra_sr/srw1500/uart0_ftdi_gpadc.overlay"
 
 .. zephyr-app-commands::
    :zephyr-app: samples/net/wifi/shell
