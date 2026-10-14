@@ -1,0 +1,9 @@
+# Copyright 2026 Synaptics Incorporated
+#
+# SPDX-License-Identifier: Apache-2.0
+
+source "share/sysbuild/Kconfig"
+
+config REMOTE_BOARD
+	string "Remote board"
+	default "sr100_rdk/sr100/m4" if "$(BOARD)/$(BOARD_QUALIFIERS)" = "sr100_rdk/sr100/m55"

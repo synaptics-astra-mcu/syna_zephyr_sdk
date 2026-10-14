@@ -210,23 +210,13 @@ Configuration
 Building and Running
 ********************
 
-Build both firmware images (see ``zephyr_srsdk/build_app.sh``). The CLIENT
-image is built first because the HOST build references it:
-
-.. zephyr-app-commands::
-   :zephyr-app: samples/ipc_data_pipeline/remote
-   :board: sr100_rdk/sr100/m4
-   :goals: build
-   :west-args: -p always -d build/m4
+Build both firmware images (see ``zephyr_srsdk/build_app.sh``):
 
 .. zephyr-app-commands::
    :zephyr-app: samples/ipc_data_pipeline/
    :board: sr100_rdk/sr100/m55
    :goals: build
-   :west-args: -p always -d build/m55 -DCONFIG_SR100_RELEASE_M4_RESET=y -DM4_BUILD=../m4
-
-``CONFIG_SR100_RELEASE_M4_RESET=y`` lets the M55 image release the M4 core
-from reset; on other SoCs use the equivalent option.
+   :west-args: -p always --sysbuild
 
 Open a serial terminal (minicom, putty, etc.) for each core and connect with
 the following settings:

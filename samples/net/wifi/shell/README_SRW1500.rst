@@ -15,6 +15,15 @@ This application is intended for:
 * verifying AP association and DHCP, and running network sanity tests from
   the shell.
 
+Supported Wi-Fi Security Modes
+*******************************
+
+The SRW1500 Wi-Fi shell sample supports connecting to access points using:
+
+* Open (no security)
+* WPA2-Personal
+* WPA3-Personal (SAE - H2E)
+
 Requirements
 ************
 

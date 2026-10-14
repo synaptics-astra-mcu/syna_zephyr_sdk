@@ -29,19 +29,13 @@ J25 (+ GND) for UART1 (M55), so there is a dedicated UART connection for each co
 Building and Running mbox
 *************************
 
-Build both firmware images for the M4 & M55:
-
-.. zephyr-app-commands::
-   :zephyr-app: samples/drivers/mbox/
-   :board: sr100_rdk/sr100/m4
-   :goals: build
-   :west-args: -d build/m4
+Build both firmware images for the M4 & M55 using the ``--sysbuild`` option:
 
 .. zephyr-app-commands::
    :zephyr-app: samples/drivers/mbox/
    :board: sr100_rdk/sr100/m55
    :goals: build
-   :west-args: -d build/m55 -DCONFIG_SR100_RELEASE_M4_RESET=y -DM4_BUILD=../../build/m4
+   :west-args: --sysbuild
 
 
 Sample Output for mbox
@@ -94,19 +88,13 @@ set to 8, i.e., 4 bytes for each core (see ``ipc0`` node in ``sr100_rdk_m4.dts``
 ``sr100_rdk_m55.dts``). The sizes can be increased, but the ``mbox_data`` sample will fail if the
 size is not 4 bytes.
 
-Build both firmware images for the M4 & M55:
-
-.. zephyr-app-commands::
-   :zephyr-app: samples/drivers/mbox_data/
-   :board: sr100_rdk/sr100/m4
-   :goals: debug
-   :west-args: -d build/m4
+Build both firmware images for the M4 & M55 using the ``--sysbuild`` option:
 
 .. zephyr-app-commands::
    :zephyr-app: samples/drivers/mbox_data/remote
    :board: sr100_rdk/sr100/m55
    :goals: debug
-   :west-args: -d build/m55 -DCONFIG_SR100_RELEASE_M4_RESET=y -DM4_BUILD=../../build/m4
+   :west-args: --sysbuild
 
 Please note that in this example, the server starts and waits for the first message from the
 client. If the client is started before the server, this message will get lost and the test
