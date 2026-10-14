@@ -128,8 +128,6 @@ command:
 
    west init -m https://github.com/synaptics-astra-mcu/syna_zephyr_sdk.git --mr main  ~/syna_zephyr
 
-The --mr option selects the manifest revision. Replace main with the required branch name when building another SDK revision.
-
 Option 2: .zip file
 
 Copy the ``syna_zephyr_sdk-main.zip`` file into ``~/syna_zephyr`` and run:
@@ -157,8 +155,14 @@ included (per default optional projects are skipped).
    pip install -r ~/syna_zephyr/zephyr/scripts/requirements.txt
    west sdk install --version 1.0.0
 
+For the image generation scripts, clone the following repository:
 
-The image generation tools require the python package ``pycryptodome`` and the executable
+.. code-block:: console
+
+   cd ~/syna_zephyr
+   git clone https://github.com/synaptics-astra-mcu/srsdk_tools.git
+
+These tools require the python package ``pycryptodome`` and the executable
 ``arm-none-eabi-objcopy`` from the ARM GNU toolchain in your PATH.
 
 **Apply patches**

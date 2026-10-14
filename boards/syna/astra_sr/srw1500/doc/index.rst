@@ -78,15 +78,13 @@ Initialize the workspace using HTTPS authentication:
 
 .. code-block:: console
 
-   west init -m https://github.com/synaptics-astra-mcu/syna_zephyr_sdk.git --mr main  ~/syna_zephyr
+   west init -m https://github.com/syna-eepd/zephyr_srsdk.git --mr main ~/syna_zephyr
 
 Alternatively, initialize the workspace using SSH authentication:
 
 .. code-block:: console
 
-   west init -m git@github.com:synaptics-astra-mcu/syna_zephyr_sdk.git --mr main ~/syna_zephyr
-
-The --mr option selects the manifest revision. Replace main with the required branch name when building another SDK revision.
+   west init -m git@github.com:syna-eepd/zephyr_srsdk.git --mr main ~/syna_zephyr
 
 Install Zephyr dependencies and clone the upstream projects:
 
@@ -96,8 +94,6 @@ Install Zephyr dependencies and clone the upstream projects:
    west update --group-filter +optional
    python -m pip install -r ~/syna_zephyr/zephyr/scripts/requirements.txt
    west sdk install --version 1.0.0
-
-Tools specific to srw1500 are located in ``~/syna_zephyr/srsdk_tools/srw1500_tools``.
 
 .. note::
 
@@ -248,37 +244,17 @@ Flash XSPI Image
    * Select **Options > List All Devices**.
    * Select FTDI Interface 1 and install the WinUSB driver.
 
-#. Copy ``srw1500_fw_flash_zephyr.bin`` to the directory containing
+#. Copy ``srw1500_zephyr_full_flash.bin`` to the directory containing
    ``openocd_flash_erase.py``.
 #. Run:
 
    .. code-block:: console
 
-      python openocd_flash_erase.py srw1500_fw_flash_zephyr.bin
+      python openocd_flash_erase.py srw1500_zephyr_full_flash.bin
 
 #. After programming completes, set STRAP 2 to pull-down and power-cycle the
    board.
 #. Connect to UART0 through FTDI interface 0 at 115200 baud.
-
-Flash RAM Image
----------------
-
-#. Power up the board using a USB Type-C cable.
-#. Run the following command to download the image through UART0:
-
-   .. code-block:: console
-
-      python uart_fw_download.py m52_fw_RAM.bin COM12 230400
-
-.. note::
-
-   Connect an external USB-to-UART TTL converter for firmware download.
-
-   UART0 pin connections:
-
-   * TX: J8 Pin 1
-   * RX: J8 Pin 2
-   * GND: J6 Pin 6
 
 Testing
 =======
@@ -295,3 +271,13 @@ shell to run the I2C tests:
 device at address ``I2C_SABRE_SLAVE_ADDR``. ``i2c_loopback_test`` exercises
 both I2C0 (controller) and I2CS0 (target) on the same board, verifying the
 full master/slave clock and reset bring-up path.
+
+SRW1500 Wi-Fi Setup Guide
+=========================
+
+Follow the `SRW1500 Wi-Fi Setup Guide </samples/net/wifi/shell/README_SRW1500.rst>`_
+for build instructions and Wi-Fi shell commands.
+
+Contributions are welcome. Please follow the existing Zephyr conventions and
+Synaptics Wi-Fi driver architecture described in the
+`Synaptics Wi-Fi Design Note </drivers/wifi/synaptics/supp_drv/README.rst>`_.
