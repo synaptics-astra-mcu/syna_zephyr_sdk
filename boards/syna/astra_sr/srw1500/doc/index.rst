@@ -17,7 +17,7 @@ following key components:
   efficient on-device AI inference
 * Embedded security architecture including Arm TrustZone®, AES, SAU, and MPU
 * Comprehensive peripherals: SDIO, SPI, UART, I²C, PDM, ADC, DAC, PWM, and USB
-* Tri-band 1x1 Wi-Fi 7 (2.4/5/6 GHz) operation
+* Wireless Connectivity: Tri-band 1x1 Wi-Fi 7 (2.4/5/6 GHz) operation: STA mode, Secure Boot, WPA2, WPA3, Wi-Fi 7 basic zperf traffic
 * Synaptics Smart Co-Ex™ technology for optimized 2.4 GHz Wi-Fi and
   Bluetooth coexistence
 * Supports FreeRTOS and Zephyr operating systems
@@ -280,6 +280,3 @@ SRW1500 Wi-Fi Setup Guide
 Follow the `SRW1500 Wi-Fi Setup Guide </samples/net/wifi/shell/README_SRW1500.rst>`_
 for build instructions and Wi-Fi shell commands.
 
-Contributions are welcome. Please follow the existing Zephyr conventions and
-Synaptics Wi-Fi driver architecture described in the
-`Synaptics Wi-Fi Design Note </drivers/wifi/synaptics/supp_drv/README.rst>`_.
