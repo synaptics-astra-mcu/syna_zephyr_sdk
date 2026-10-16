@@ -35,6 +35,37 @@ Supported Features
 
 .. zephyr:board-supported-hw::
 
+Hardware Peripherals
+--------------------
+
+Drivers for the following hardware peripherals are supported:
+
+* Caches, MPU
+* UART (shell, console, logging)
+* GPIOs
+* SD interface: eMMC, SD/MMC & SDIO/WiFi cards
+* Ethernet, MDIO
+* DDR, NPU memories
+* ICTL interrupt controller (interrupts from A55)
+* xSPI flash controller (NOR-flash, SPI, quad & octa modes),
+  filesystem support
+* SPI master, slave
+* I2C master, slave, I3C
+* Timer
+* Watchdog
+* Mbox/IPC between M52 & A55
+* TRNG
+* CAN
+* USB (device)
+
+Boot & Storage
+--------------
+
+The Zephyr firmware can be built for and installed on eMMC, XSPI, SD card or
+loaded via USB.
+Zephyr supports the internal and DDR & NPU memories. As storage devices,
+xSPI-NOR and eMMC can be used.
+
 
 Connections and IOs
 ===================
@@ -48,7 +79,7 @@ Programming and Debugging
 
 .. zephyr:board-supported-runners::
 
-The Synaptics SL261X SoC needs to be eMMC flashed prior to running a Zephyr application.
+The Synaptics SL261X SoC must be flashed before running a Zephyr application.
 This can be achieved by following Synaptics Astra Machina Eval platform instructions.
 
 
@@ -101,22 +132,26 @@ On a Linux host terminal, run:
    sudo apt install binutils-arm-none-eabi
    pip install cmake
 
+
 Initialization
 ==============
 
-Next, obtain ``zephyr_srsdk`` either by ``west init`` or from a ``.zip`` file.
+Next, obtain ``syna_zephyr_srsdk`` either by ``west init`` or from a ``.zip`` file.
 
 **Option 1: west init**
 
-Initialize the workspace folder (``syna_zephyr``). Make sure your ssh keys for accessing the
+Initialize the workspace folder (``~/syna_zephyr``). Make sure your ssh keys for accessing the
 Synaptics repositories are added to github and authenticated. Run the following command:
 
 .. code-block:: console
 
-   west init -m https://github.com/syna-eepd/zephyr_srsdk --mr main syna_zephyr
+   west init -m https://github.com/synaptics-astra-mcu/syna_zephyr_srsdk.git --mr main ~/syna_zephyr
 
+The --mr option selects the manifest revision. Replace main with the required branch name when building another SDK revision.
 
 **Option 2: .zip file**
+
+Copy the ``syna_zephyr_sdk-main.zip`` file into ``~/syna_zephyr`` and run:
 
 .. code-block:: console
 
@@ -125,13 +160,18 @@ Synaptics repositories are added to github and authenticated. Run the following 
    mv zephyr_srsdk-main zephyr_srsdk
    west init -l .
 
+
 **Common setup (required for both options)**
+
+The file ``west.yml`` defines the external modules required for building
+the various applications and samples; they are fetched by running ``west
+update``.
 
 .. code-block:: console
 
-   cd ~/syna_zephyr/zephyr
+   cd ~/syna_zephyr
    west update
-   west sdk install --version 1.0.0 --toolchains arm-zephyr-eabi aarch64-zephyr-elf
+   west sdk install --version 1.0.0 --gnu-toolchains arm-zephyr-eabi aarch64-zephyr-elf
    pip install -r ~/syna_zephyr/zephyr/scripts/requirements.txt
 
 **Additional requirement (GICv2 support)**
@@ -167,7 +207,7 @@ Before building, set the toolchain environment for each target.
 
 .. code-block:: console
 
-   cd syna_zephyr/zephyr
+   cd ~/syna_zephyr/syna_zephyr_sdk
 
    export ZEPHYR_TOOLCHAIN_VARIANT=zephyr
    export ZEPHYR_SDK_INSTALL_DIR=<path/to/zephyr-sdk-1.0.0>
@@ -314,6 +354,32 @@ Boot Flow Summary
 4. Enable SPI boot (SD_BOOT) in case of XSPI
 5. Reset board
 6. Zephyr runs
+
+
+Sample Applications
+*******************
+
+CAN
+===
+
+See ``syna_zephyr_sdk/samples/drivers/can/README.rst``.
+
+UART, xSPI-NOR flash, I2C, SPI, GPIO, HW Info
+=============================================
+
+See ``syna_zephyr_sdk/samples/shell/README.rst``.
+
+Ethernet
+========
+
+See ``syna_zephyr_sdk/samples/drivers/ethernet/README.rst``.
+Standard Zephyr samples like ``zephyr/samples/net/dhcpv4_client`` and
+``zephyr/samples/net/zperf`` can be built.
+
+eMMC
+====
+
+See ``syna_zephyr_sdk/samples/sdhc/README.rst``.
 
 
 References

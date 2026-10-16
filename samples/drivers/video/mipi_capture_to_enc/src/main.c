@@ -1054,9 +1054,6 @@ int main(void)
 			goto out_enc_cleanup;
 		}
 #endif
-		if ((i + 1U) < APP_NUM_QUADRANTS) {
-			const struct app_quadrant *next_q = &app_quadrants[i + 1U];
-			int64_t next_stage_start_ms = k_uptime_get();
 #if IS_ENABLED(CONFIG_USB_TRANSPORT_UVC) &&                                               \
 	!IS_ENABLED(CONFIG_STORE_TO_XSPI)
 		ret = uvc_send_frame_live((const uint8_t *)jpeg_out->buffer, jpeg_len);
@@ -1081,6 +1078,9 @@ int main(void)
 
 		k_sleep(K_MSEC(100));
 #endif
+		if ((i + 1U) < APP_NUM_QUADRANTS) {
+			const struct app_quadrant *next_q = &app_quadrants[i + 1U];
+			int64_t next_stage_start_ms = k_uptime_get();
 
 			LOG_INF("Encoding quadrant[%u]=%s", (unsigned int)(i + 1U), next_q->name);
 			ret = quadrant_copy_to_encoder(mipi_frame, next_q->x_offset, next_q->y_offset,

@@ -3,6 +3,11 @@
 
 include(ExternalProject)
 
+if(SB_CONFIG_REMOTE_BOARD STREQUAL "sr100_rdk/sr100/m4")
+  set(SR100_IMAGEGEN_M4_PARAM "-m4_image" "${CMAKE_BINARY_DIR}/remote/zephyr/zephyr.elf")
+  set_config_bool(${DEFAULT_IMAGE} CONFIG_SR100_RELEASE_M4_RESET y)
+endif()
+
 if(SB_CONFIG_APP_M4)
   if(SB_CONFIG_APP_M4_SOURCE_DIR AND NOT SB_CONFIG_APP_M4_SOURCE_DIR STREQUAL "")
     set(SR100_M4_APP_DIR "${SB_CONFIG_APP_M4_SOURCE_DIR}")

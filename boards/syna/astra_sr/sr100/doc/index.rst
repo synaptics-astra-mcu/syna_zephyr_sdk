@@ -46,6 +46,38 @@ Supported Features
 
 .. zephyr:board-supported-hw::
 
+Hardware Peripherals
+--------------------
+
+Drivers for the following hardware peripherals are supported:
+
+* Caches, MPU
+* UART (shell, console, logging)
+* GPIOs, AON-GPIOs, GPIO expander, LEDs controlled through GPIOs
+* DMA (SPI master & slave, UART, memory-to-memory including rotation)
+* SD interface: SD/MMC & SDIO/WiFi cards
+* Bluetooth
+* xSPI flash controller (NOR-flash, SPI, quad & octa modes),
+  filesystem support
+* SPI master, slave
+* I2C master, slave, I3C
+* Timer
+* Watchdog
+* Mbox/IPC between M55 & M4
+* TRNG
+* Audio: I2S, DMIC
+* Video: MIPI capture, JPEG encoder, person detection
+* TFlite-micro (person detection)
+* USB device
+
+Boot & Storage
+--------------
+
+The Zephyr firmware can be installed on XSPI-NOR flash or loaded via JTAG, UART
+or USB.
+Zephyr supports the internal memories (ITCM, SRAM).
+As storage  devices, xSPI-NOR or SD cards can be used.
+
 Connections and IOs
 ===================
 
@@ -154,12 +186,11 @@ included (per default optional projects are skipped).
    cd ~/syna_zephyr
    west config manifest.project-filter -- +tflite-micro
    west update
+   west sdk install --version 1.0.0 --gnu-toolchains arm-zephyr-eabi
    pip install -r ~/syna_zephyr/zephyr/scripts/requirements.txt
-   west sdk install --version 1.0.0
 
-
-The image generation tools require the python package ``pycryptodome`` and the executable
-``arm-none-eabi-objcopy`` from the ARM GNU toolchain in your PATH.
+The image generation tools require the python package ``pycryptodome`` and the
+executable ``arm-none-eabi-objcopy`` from the ARM GNU toolchain in your PATH.
 
 **Apply patches**
 
@@ -342,6 +373,83 @@ On the host, open a serial terminal (for example, Tera Term) on the correspondin
 .. code-block:: console
 
    uart:~$
+
+
+Sample Applications
+*******************
+
+Audio: I2S, DMIC
+================
+
+See ``syna_zephyr_sdk/samples/drivers/dmic_shell/README.rst`` and
+``syna_zephyr_sdk/samples/drivers/i2s_shell/README.rst``.
+
+UART, xSPI-NOR flash, I2C, GPIO, HW Info
+========================================
+
+See ``syna_zephyr_sdk/samples/shell/README.rst`` and
+``syna_zephyr_sdk/samples/drivers/flash/README.rst``.
+
+SDIO
+====
+
+See ``syna_zephyr_sdk/samples/sdio/README.rst``.
+
+DMA
+===
+
+The DMA sample supports SPI master & slave, UART peripheral and memory-to-memory
+transfers, including rotation.
+See ``syna_zephyr_sdk/samples/drivers/dma/README.rst`` and
+``syna_zephyr_sdk/samples/dma``.
+
+Bluetooth
+=========
+
+See ``syna_zephyr_sdk/samples/bluetooth/README.rst``.
+
+Mbox/IPC
+========
+
+See ``syna_zephyr_sdk/samples/drivers/mbox/README.rst`` and
+``syna_zephyr_sdk/samples/ipc_data_pipeline/README.rst``.
+
+Timer
+=====
+
+See ``syna_zephyr_sdk/samples/drivers/timer/README.rst``.
+
+USB Device
+==========
+
+See ``syna_zephyr_sdk/samples/subsys/usb_composite_hid_dual_cdc/README.rst``.
+Standard Zephyr samples like ``zephyr/samples/subsys/usb/cdc_acm`` can be
+built.
+
+Host API system
+===============
+
+See ``syna_zephyr_sdk/samples/subsys/host_api_system/README.rst``.
+
+Video / Camera / NPU
+====================
+
+See ``syna_zephyr_sdk/samples/person_detection_mipi/README.rst``,
+``syna_zephyr_sdk/samples/modules/tflite-micro/person_detection/README.rst``,
+``syna_zephyr_sdk/samples/drivers/video/enc/README.rst``,
+``syna_zephyr_sdk/samples/drivers/video/mipi_capture/README.rst`` and
+``syna_zephyr_sdk/samples/drivers/video/mipi_capture_to_enc/README.rst``.
+
+CMSIS-DSP
+=========
+
+See ``syna_zephyr_sdk/samples/modules/cmsis_dsp/README.rst``.
+
+MCUBoot, combined image with M4
+===============================
+
+See section above and ``syna_zephyr_sdk/samples/m4/README.rst``.
+
 
 References
 **********
