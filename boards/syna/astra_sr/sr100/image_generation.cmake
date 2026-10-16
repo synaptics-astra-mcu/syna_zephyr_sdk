@@ -8,7 +8,7 @@ find_path(SRSDK_IMGGEN
 )
 
 if (NOT DEFINED SR100_IMAGEGEN_APBL_ELF)
-  set(SR100_IMAGEGEN_APBL_ELF "${SRSDK_IMGGEN}/B0_Input_examples/sr100_b0_bootloader_ver_0x0134_ASIC_Release.axf")
+  set(SR100_IMAGEGEN_APBL_ELF "${SRSDK_IMGGEN}/B0_Input_examples/sr100_b0_bootloader_ver_0x141_ASIC_Release.axf")
 endif()
 
 if(SRSDK_IMGGEN AND NOT DEFINED TC_RUNID)
