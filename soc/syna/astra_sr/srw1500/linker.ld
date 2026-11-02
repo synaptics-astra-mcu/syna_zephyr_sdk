@@ -502,6 +502,8 @@ SECTION_DATA_PROLOGUE(.system_heap_noinit, (NOLOAD),)
 {
 	. = ALIGN(8);
 	KEEP(*(.noinit.*mempool.c.kheap_buf__system_heap))
+	KEEP(*(.noinit.*net_pkt.c.net_buf_data_rx_bufs))
+	KEEP(*(.noinit.*net_pkt.c.net_buf_data_tx_bufs))
 } GROUP_NOLOAD_LINK_IN(SRAM_HEAP, SRAM_HEAP)
 
 #include <zephyr/linker/debug-sections.ld>

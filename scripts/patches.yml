@@ -8,6 +8,7 @@ patches:
   - path: patches/zephyr-v4_4.patch
   - path: patches/udc_dwc2_syna.patch
   - path: patches/bl-linker.patch
+  - path: patches/netbuf_section.patch
   - path: patches/zephyr-mcuboot-srw1500.patch
     module: bootloader/mcuboot
   - path: patches/hostap.patch
